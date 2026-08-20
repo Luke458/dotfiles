@@ -50,13 +50,15 @@ systemctl --user restart media-stack.target
 
 ## Automatic synchronization
 
-`dotfiles-sync.timer` checks hourly, with a small randomized delay. It refreshes
-the Arch package lists, commits tracked changes, and pushes `main` when the
-remote is still an ancestor of the local branch.
+`dotfiles-sync.timer` checks hourly, with a small randomized delay. It safely
+fast-forwards a clean local checkout, refreshes the Arch package lists, commits
+tracked changes, and pushes `main` when the remote is still an ancestor of the
+local branch.
 
 The sync deliberately refuses credential signatures, whitespace errors, a
-pre-staged index, and remote divergence. New untracked files are reported in the
-journal but are never added or published automatically.
+pre-staged index, remote divergence, and remote updates that overlap local
+tracked changes. New untracked files are reported in the journal but are never
+added or published automatically.
 
 ```sh
 systemctl --user enable --now dotfiles-sync.timer

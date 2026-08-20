@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_dir=/home/luke/dotfiles
+runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+lock_file="$runtime_dir/dotfiles-sync.lock"
+
+exec 9>"$lock_file"
+if ! flock --nonblock 9; then
+  printf '%s\n' 'Another dotfiles sync is already running; exiting.'
+  exit 0
+fi
+
+cd "$repo_dir"
+
+current_branch="$(git symbolic-ref --quiet --short HEAD)"
+if [[ "$current_branch" != main ]]; then
+  printf 'Refusing to sync branch %s; expected main.\n' "$current_branch" >&2
+  exit 1
+fi
+
+if ! git diff --cached --quiet; then
+  printf '%s\n' 'Refusing to sync while the Git index contains staged changes.' >&2
+  exit 1
+fi
+
+git fetch --quiet origin main
+if git merge-base --is-ancestor origin/main HEAD; then
+  :
+elif git merge-base --is-ancestor HEAD origin/main; then
+  if ! git diff --quiet; then
+    printf '%s\n' 'Remote main is ahead while tracked local changes exist.' >&2
+    exit 1
+  fi
+  git merge --ff-only --quiet origin/main
+  printf '%s\n' 'Fast-forwarded local main from origin.'
+else
+  printf '%s\n' 'Local and remote main have diverged; resolve them manually.' >&2
+  exit 1
+fi
+
+./packages/update.sh
+
+if ! git diff --check; then
+  printf '%s\n' 'Refusing to sync changes with whitespace errors.' >&2
+  exit 1
+fi
+
+if rg --hidden --files-with-matches --ignore-case \
+  --glob '!.git/**' \
+  --glob '!scripts/.local/bin/dotfiles-sync' \
+  --glob '!*.png' \
+  --glob '!*.jpg' \
+  --glob '!*.jpeg' \
+  --glob '!*.webp' \
+  --glob '!*.gif' \
+  '(gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9A-Za-z-]{10,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' \
+  .; then
+  printf '%s\n' 'Refusing to sync because a credential signature was found.' >&2
+  exit 1
+fi
+
+mapfile -t untracked_files < <(git ls-files --others --exclude-standard)
+if ((${#untracked_files[@]} > 0)); then
+  printf 'Leaving %d untracked file(s) for manual review:\n' "${#untracked_files[@]}"
+  printf '  %s\n' "${untracked_files[@]}"
+fi
+
+# Only update files already reviewed and tracked by Git. New files are never
+# automatically published.
+git add --update
+
+if git diff --cached --quiet; then
+  printf '%s\n' 'Dotfiles are already synchronized.'
+  exit 0
+fi
+
+sync_time="$(date --iso-8601=seconds)"
+git commit --quiet -m "chore: sync dotfiles $sync_time"
+
+# Close the fetch-to-push race without attempting an automatic merge or rebase.
+git fetch --quiet origin main
+if ! git merge-base --is-ancestor origin/main HEAD; then
+  printf '%s\n' 'Remote main changed during sync; local commit was not pushed.' >&2
+  exit 1
+fi
+
+git push --quiet origin HEAD:main
+printf 'Synchronized dotfiles at %s (%s).\n' "$sync_time" "$(git rev-parse --short HEAD)"

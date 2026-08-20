@@ -1,0 +1,12 @@
+[Unit]
+Description=Commit and push tracked dotfile changes
+ConditionPathIsDirectory=/home/luke/dotfiles/.git
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/luke/dotfiles
+Environment=GIT_TERMINAL_PROMPT=0
+ExecStart=/home/luke/.local/bin/dotfiles-sync
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=5min

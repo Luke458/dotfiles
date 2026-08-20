@@ -1,0 +1,13 @@
+[Unit]
+Description=Synchronize tracked dotfiles hourly
+
+[Timer]
+OnBootSec=10min
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=5min
+AccuracySec=1min
+Unit=dotfiles-sync.service
+
+[Install]
+WantedBy=timers.target

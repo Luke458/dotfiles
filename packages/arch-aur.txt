@@ -1,4 +1,3 @@
-htop-vim
 hyprqt6engine
 instaloader
 libstrangle

@@ -5,9 +5,9 @@ repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 target_dir="${STOW_TARGET:-$HOME}"
 
 all_packages=(
-  btop cava containers desktop easyeffects fastfetch git glow helium htop
-  hypr imv kitty mpv nsxiv nvim pacman paru pinentry quickshell scripts
-  systemd theme uwsm wofi yazi zsh
+  btop cava containers desktop easyeffects fastfetch git glow helium hypr imv
+  kitty mpv nsxiv nvim pacman paru pinentry quickshell scripts systemd theme
+  uwsm yazi zsh
 )
 
 action="${1:-install}"

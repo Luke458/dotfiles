@@ -1,0 +1,9 @@
+{
+  "name": "com.local.mpv",
+  "description": "Open or download Chromium page URLs with mpv and yt-dlp",
+  "path": "/home/luke/Projects/chromium-mpv/bin/chromium-mpv-host",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://cglbedpdgaapedchbdmgmngkjbhaiipl/"
+  ]
+}

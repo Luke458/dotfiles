@@ -1,0 +1,4 @@
+[soe][Convolver#0]
+bypass=true
+irWidth=0
+kernelName=D2_44K_16bit_256tap_FIR_SOFA

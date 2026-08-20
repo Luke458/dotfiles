@@ -1,0 +1,32 @@
+# Personal imv defaults for directory-album viewing.
+
+[options]
+# Retain imv's built-in navigation, zoom, pan, and slideshow controls.
+suppress_default_binds = false
+
+# Do not enlarge small images unless requested with another scaling mode.
+scaling_mode = shrink
+
+# Show useful album and image information without obscuring the top edge.
+overlay = true
+overlay_font = Monospace:16
+overlay_position_bottom = true
+overlay_background_alpha = c3
+overlay_text = [${imv_current_index}/${imv_file_count}] $(basename "$imv_current_file")  ${imv_width}x${imv_height}  ${imv_scale}%  ${imv_scaling_mode}
+
+title_text = imv - [${imv_current_index}/${imv_file_count}] $(basename "$imv_current_file")
+
+[binds]
+# Copy the current image's full path to the Wayland clipboard.
+y = exec printf '%s' "$imv_current_file" | wl-copy
+
+# Open Yazi with the current image selected.
+e = exec kitty --detach -e yazi "$imv_current_file"
+
+# Apply the current image to every active Hyprland monitor.
+w = exec hyprctl monitors -j | jq -r '.[].name' | xargs -r -I{} hyprctl hyprpaper wallpaper "{}, $imv_current_file, cover"
+
+# Move the file to the desktop trash, then close it only if trashing succeeded.
+# Show a desktop notification when the current filesystem cannot provide trash.
+<Shift+D> = exec gio trash "$imv_current_file" && imv-msg "$imv_pid" close || notify-send -u critical "imv: trash failed" "$imv_current_file"
+<Delete> = exec gio trash "$imv_current_file" && imv-msg "$imv_pid" close || notify-send -u critical "imv: trash failed" "$imv_current_file"

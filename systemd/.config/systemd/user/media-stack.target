@@ -1,0 +1,13 @@
+[Unit]
+Description=Podman media stack
+Wants=media-stack-network.service
+Wants=media-stack-jellyfin.service
+Wants=media-stack-sonarr.service
+Wants=media-stack-radarr.service
+Wants=media-stack-prowlarr.service
+Wants=media-stack-qbittorrent.service
+After=media-stack-network.service
+
+[Install]
+WantedBy=default.target
+

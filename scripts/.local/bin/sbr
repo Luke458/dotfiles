@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec /home/luke/Projects/sing-box-routes/bin/sbr "$@"

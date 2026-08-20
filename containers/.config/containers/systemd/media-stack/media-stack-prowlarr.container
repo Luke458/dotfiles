@@ -1,0 +1,26 @@
+[Unit]
+Description=Prowlarr indexer manager
+PartOf=media-stack.target
+
+[Container]
+Image=lscr.io/linuxserver/prowlarr:latest
+ContainerName=prowlarr
+AutoUpdate=registry
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=UMASK=002
+Environment=TZ=Etc/UTC
+Volume=/home/luke/media-stack/config/prowlarr:/config
+PublishPort=9696:9696
+Network=media-stack.network
+NetworkAlias=prowlarr
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=media-stack.target
+
+[Quadlet]
+DefaultDependencies=false

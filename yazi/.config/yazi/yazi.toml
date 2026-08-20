@@ -1,0 +1,56 @@
+# yazi.toml
+[opener]
+edit = [
+    { run = "nvim %s", block = true, desc = "Neovim", for = "unix" },
+]
+view-image = [
+    { run = "imv-dir %s", orphan = true, desc = "imv (directory album)", for = "unix" },
+]
+play = [
+    { run = "mpv %s", orphan = true, desc = "mpv", for = "unix" },
+]
+document = [
+    { run = "zathura %s", orphan = true, desc = "Zathura", for = "unix" },
+]
+set-wallpaper = [
+    { run = '''wallpaper=%s1; hyprctl monitors -j | jq -r '.[].name' | while IFS= read -r monitor; do hyprctl hyprpaper wallpaper "$monitor, $wallpaper, cover"; done''', for = "linux", desc = "Set as wallpaper" },
+]
+strip-metadata = [
+    { run = '''printf 'Permanently remove all embedded metadata? [y/N] '; read -r answer; case "$answer" in [yY]) exiftool -all= -overwrite_original -P %s ;; *) printf 'Cancelled.\n' ;; esac; printf 'Press Enter to return to Yazi...'; read -r''', block = true, for = "unix", desc = "Strip all metadata (ExifTool)" },
+]
+
+[open]
+prepend_rules = [
+    # Text-like formats do not all report a text/* MIME type.
+    { mime = "text/*", use = [ "edit", "reveal" ] },
+    { mime = "application/{json,ndjson,javascript,x-javascript,xml,yaml,x-yaml,toml,x-shellscript,x-sh,wine-extension-ini}", use = [ "edit", "reveal" ] },
+    { mime = "inode/empty", use = [ "edit", "reveal" ] },
+
+    # Put the normal viewer first; the wallpaper action remains in Open with.
+    { mime = "image/*", use = [ "view-image", "set-wallpaper", "strip-metadata", "reveal" ] },
+    { mime = "{audio,video}/*", use = [ "play", "reveal" ] },
+
+    # Formats supported by the installed zathura-pdf-mupdf plugin.
+    { mime = "application/{pdf,oxps,epub+zip,x-fictionbook,x-mobipocket-ebook}", use = [ "document", "reveal" ] },
+]
+[plugin]
+prepend_preloaders = [
+    { mime = "{audio,video,image}/*", run = "mediainfo" },
+    { mime = "application/{subrip,postscript,illustrator,dvb.ait,vnd.adobe.illustrator,eps}", run = "mediainfo" },
+    { url = "*.{ai,eps,ait}", run = "mediainfo" },
+    { url = "*.md",     run = 'faster-piper -- CLICOLOR_FORCE=1 glow -w=$w -s=dracula -- "$1"' },
+]
+
+prepend_previewers = [
+    { mime = "{audio,video,image}/*", run = "mediainfo" },
+    { mime = "application/{subrip,postscript,illustrator,dvb.ait,vnd.adobe.illustrator,eps}", run = "mediainfo" },
+    { url = "*.{ai,eps,ait}", run = "mediainfo" },
+    { url = "*.md",     run = 'faster-piper --rely-on-preloader' },
+
+]
+
+# For a large file like Adobe Illustrator, Adobe Photoshop, etc
+# you may need to increase the memory limit if no image is rendered.
+# https://yazi-rs.github.io/docs/configuration/yazi#tasks
+#[tasks]
+#  image_alloc      = 1073741824        # = 1024*1024*1024 = 1024MB

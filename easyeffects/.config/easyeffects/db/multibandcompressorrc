@@ -1,0 +1,6 @@
+[soe][MultibandCompressor#0]
+band0CompressionMode=2
+band0Ratio=1.2
+bypass=true
+compressorMode=2
+stereoSplit=true

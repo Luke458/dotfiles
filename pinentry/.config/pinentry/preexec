@@ -1,0 +1,2 @@
+# Force Arch's /usr/bin/pinentry selector to use the Quickshell bridge.
+exec /home/luke/.local/bin/pinentry-quickshell "$@"

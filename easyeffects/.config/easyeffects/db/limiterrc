@@ -1,0 +1,4 @@
+[soe][Limiter#0]
+alr=true
+lookahead=4
+threshold=-0.1

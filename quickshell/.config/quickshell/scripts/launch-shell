@@ -1,0 +1,43 @@
+#!/usr/bin/env sh
+set -u
+
+shell_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+shell_command="$shell_root/scripts/qs"
+retry_window_seconds=60
+maximum_retries=5
+window_started=$(date +%s)
+retry_count=0
+
+while :; do
+    started=$(date +%s)
+    if command -v systemd-cat >/dev/null 2>&1; then
+        systemd-cat -t luke-quickshell -- "$shell_command" "$@"
+        shell_status=$?
+    else
+        "$shell_command" "$@"
+        shell_status=$?
+    fi
+
+    # An IPC/file-watcher shutdown is intentional; only crashes are retried.
+    if [ "$shell_status" -eq 0 ]; then
+        exit 0
+    fi
+
+    now=$(date +%s)
+    if [ $((now - window_started)) -gt "$retry_window_seconds" ]; then
+        window_started=$now
+        retry_count=0
+    fi
+
+    retry_count=$((retry_count + 1))
+    if [ "$retry_count" -gt "$maximum_retries" ]; then
+        logger -t luke-quickshell "retry budget exhausted after status $shell_status"
+        exit "$shell_status"
+    fi
+
+    logger -t luke-quickshell "quickshell exited with status $shell_status; retry $retry_count/$maximum_retries"
+    runtime=$((now - started))
+    if [ "$runtime" -lt 2 ]; then
+        sleep 2
+    fi
+done

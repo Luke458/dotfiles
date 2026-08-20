@@ -1,0 +1,25 @@
+[EffectsPipelines]
+processAllInputs=false
+
+[Presets]
+lastLoadedOutputPreset=EPZ P40
+
+[StreamInputs]
+inputDevice=alsa_input.usb-TOPPING_DX1_II-00.pro-input-0
+listenToMicIncludesOutputEffects=true
+useDefaultInputDevice=false
+
+[StreamOutputs]
+mostUsedPresets=EPZ P40,Sennheiser PC36X,AKG EO-IG955
+outputDevice=alsa_output.usb-TOPPING_DX1_II-00.pro-output-0
+plugins=equalizer#5,stereo_tools#0
+showBlocklistedApps=true
+useDefaultOutputDevice=false
+usedPresets=Sennheiser PC36X:23,EPZ P40:46,AKG EO-IG955:7
+visiblePage=pluginsPage
+visiblePlugin=stereo_tools#0
+
+[Window]
+height=1392
+visiblePage=inputPage
+width=1256

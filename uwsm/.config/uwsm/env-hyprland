@@ -1,0 +1,2 @@
+# Hyprland Environment Variables (managed by UWSM)
+export HYPRCURSOR_SIZE=24

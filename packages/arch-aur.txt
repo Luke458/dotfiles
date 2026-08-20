@@ -1,0 +1,11 @@
+htop-vim
+hyprqt6engine
+instaloader
+libstrangle
+llama.cpp-git
+qml-language-server-bin
+quickshell-local-git
+ripdrag-git
+sing-box-bin
+spotify
+xdg-ninja-git

@@ -1,0 +1,268 @@
+#!/usr/bin/env python3
+"""Emit a JSON snapshot of the current user's generated Podman quadlets."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import time
+from pathlib import Path
+from typing import Any
+
+
+QUADLET_SUFFIXES = {
+    ".build": "build",
+    ".container": "container",
+    ".image": "image",
+    ".kube": "kube",
+    ".network": "network",
+    ".pod": "pod",
+    ".volume": "volume",
+}
+
+
+def run(command: list[str]) -> tuple[str, str, int]:
+    completed = subprocess.run(
+        command,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=15,
+    )
+    return completed.stdout, completed.stderr.strip(), completed.returncode
+
+
+def parse_show(text: str) -> list[dict[str, str]]:
+    records: list[dict[str, str]] = []
+    record: dict[str, str] = {}
+    for line in text.splitlines():
+        if not line:
+            if record:
+                records.append(record)
+                record = {}
+            continue
+        key, separator, value = line.partition("=")
+        if separator:
+            record[key] = value
+    if record:
+        records.append(record)
+    return records
+
+
+def quadlet_type(source_path: str) -> str | None:
+    return QUADLET_SUFFIXES.get(Path(source_path).suffix)
+
+
+def short_image(image: str) -> str:
+    return image.rsplit("/", 1)[-1] if image else ""
+
+
+def parse_percent(value: Any) -> float:
+    try:
+        return float(str(value).rstrip("%"))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def parse_size(value: str) -> float:
+    number_text, _, suffix = value.strip().partition(" ")
+    if not suffix:
+        index = 0
+        while index < len(number_text) and (number_text[index].isdigit() or number_text[index] == "."):
+            index += 1
+        suffix = number_text[index:]
+        number_text = number_text[:index]
+    try:
+        number = float(number_text)
+    except ValueError:
+        return 0.0
+    factors = {
+        "B": 1,
+        "kB": 1_000,
+        "KB": 1_000,
+        "MB": 1_000_000,
+        "GB": 1_000_000_000,
+        "KiB": 1_024,
+        "MiB": 1_048_576,
+        "GiB": 1_073_741_824,
+    }
+    return number * factors.get(suffix, 1)
+
+
+def human_size(value: float) -> str:
+    for suffix in ("B", "KB", "MB", "GB", "TB"):
+        if value < 1000 or suffix == "TB":
+            decimals = 0 if suffix in ("B", "KB") or value >= 100 else 1
+            return f"{value:.{decimals}f}{suffix}"
+        value /= 1000
+    return "0B"
+
+
+def unit_file_names() -> tuple[list[str], list[str]]:
+    stdout, stderr, code = run(
+        ["systemctl", "--user", "list-unit-files", "--type=service", "--no-legend", "--no-pager", "--plain"]
+    )
+    errors: list[str] = []
+    if code != 0:
+        errors.append(stderr or "Unable to list user services")
+    # Quadlet's generator exposes its services with the `generated` unit-file
+    # state. Restricting the batch also avoids querying template units such as
+    # `foo@.service`, which systemctl refuses to show without an instance.
+    names = []
+    for line in stdout.splitlines():
+        fields = line.split()
+        if len(fields) >= 2 and fields[1] == "generated" and "@." not in fields[0]:
+            names.append(fields[0])
+    return names, errors
+
+
+def systemd_units() -> tuple[list[dict[str, str]], list[str]]:
+    names, errors = unit_file_names()
+    if not names:
+        return [], errors
+    stdout, stderr, code = run(
+        [
+            "systemctl",
+            "--user",
+            "show",
+            *names,
+            "--property=Id,Description,LoadState,ActiveState,SubState,UnitFileState,Result,NRestarts,ActiveEnterTimestamp,SourcePath",
+            "--no-pager",
+        ]
+    )
+    if code != 0 and not stdout:
+        errors.append(stderr or "Unable to inspect user services")
+    units = [record for record in parse_show(stdout) if quadlet_type(record.get("SourcePath", ""))]
+    return units, errors
+
+
+def podman_containers() -> tuple[dict[str, dict[str, Any]], list[str]]:
+    stdout, stderr, code = run(["podman", "ps", "--all", "--format", "json"])
+    if code != 0:
+        return {}, [stderr or "Unable to inspect Podman containers"]
+    try:
+        containers = json.loads(stdout or "[]")
+    except json.JSONDecodeError:
+        return {}, ["Podman returned invalid container data"]
+    by_unit: dict[str, dict[str, Any]] = {}
+    for container in containers:
+        labels = container.get("Labels") or {}
+        unit = labels.get("PODMAN_SYSTEMD_UNIT", "")
+        if unit:
+            by_unit[unit] = container
+    return by_unit, []
+
+
+def podman_stats(enabled: bool) -> tuple[dict[str, dict[str, Any]], list[str]]:
+    if not enabled:
+        return {}, []
+    stdout, stderr, code = run(["podman", "stats", "--no-stream", "--all", "--format", "json"])
+    if code != 0:
+        return {}, [stderr or "Unable to collect Podman resource usage"]
+    try:
+        stats = json.loads(stdout or "[]")
+    except json.JSONDecodeError:
+        return {}, ["Podman returned invalid resource data"]
+    return {str(item.get("name", "")): item for item in stats if item.get("name")}, []
+
+
+def snapshot(include_stats: bool) -> dict[str, Any]:
+    raw_units, errors = systemd_units()
+    containers, container_errors = podman_containers()
+    stats, stats_errors = podman_stats(include_stats)
+    errors.extend(container_errors)
+    errors.extend(stats_errors)
+
+    units: list[dict[str, Any]] = []
+    total_cpu = 0.0
+    total_memory = 0.0
+    for raw in raw_units:
+        unit_id = raw.get("Id", "")
+        kind = quadlet_type(raw.get("SourcePath", "")) or "quadlet"
+        container = containers.get(unit_id, {})
+        names = container.get("Names") or []
+        container_name = str(names[0]) if names else ""
+        metric = stats.get(container_name, {})
+        active = raw.get("ActiveState", "unknown")
+        container_state = str(container.get("State", ""))
+        healthy = active == "active" and (kind != "container" or container_state == "running")
+        cpu_value = parse_percent(metric.get("cpu_percent", "0"))
+        memory_usage = str(metric.get("mem_usage", "")).split(" / ", 1)[0]
+        total_cpu += cpu_value
+        total_memory += parse_size(memory_usage)
+
+        fallback_name = unit_id.removesuffix(".service")
+        if kind != "container" and fallback_name.endswith("-" + kind):
+            fallback_name = fallback_name[: -(len(kind) + 1)]
+        units.append(
+            {
+                "unit": unit_id,
+                "name": container_name or fallback_name,
+                "description": raw.get("Description", ""),
+                "type": kind,
+                "activeState": active,
+                "subState": raw.get("SubState", "unknown"),
+                "result": raw.get("Result", ""),
+                "restarts": int(raw.get("NRestarts", "0") or 0),
+                "since": raw.get("ActiveEnterTimestamp", ""),
+                "healthy": healthy,
+                "containerState": container_state,
+                "status": str(container.get("Status", "")),
+                "image": short_image(str(container.get("Image", ""))),
+                "cpu": str(metric.get("cpu_percent", "")),
+                "memory": memory_usage,
+                "pids": str(metric.get("pids", "")),
+            }
+        )
+
+    units.sort(key=lambda unit: (unit["healthy"], unit["type"] != "container", unit["name"].lower()))
+    healthy_count = sum(1 for unit in units if unit["healthy"])
+    container_count = sum(1 for unit in units if unit["type"] == "container")
+    running_count = sum(1 for unit in units if unit["containerState"] == "running")
+    return {
+        "units": units,
+        "total": len(units),
+        "healthy": healthy_count,
+        "failed": len(units) - healthy_count,
+        "containers": container_count,
+        "runningContainers": running_count,
+        "totalCpu": round(total_cpu, 2),
+        "totalMemory": human_size(total_memory),
+        "detailed": include_stats,
+        "updatedAt": int(time.time() * 1000),
+        "error": "; ".join(dict.fromkeys(error for error in errors if error)),
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--stats", action="store_true", help="include a one-shot Podman resource sample")
+    args = parser.parse_args()
+    try:
+        print(json.dumps(snapshot(args.stats), separators=(",", ":")), flush=True)
+    except (OSError, subprocess.SubprocessError) as error:
+        print(
+            json.dumps(
+                {
+                    "units": [],
+                    "total": 0,
+                    "healthy": 0,
+                    "failed": 0,
+                    "containers": 0,
+                    "runningContainers": 0,
+                    "totalCpu": 0,
+                    "totalMemory": "0B",
+                    "detailed": args.stats,
+                    "updatedAt": int(time.time() * 1000),
+                    "error": str(error),
+                },
+                separators=(",", ":"),
+            ),
+            flush=True,
+        )
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,47 @@
+# Session-wide Environment Variables (managed by UWSM)
+
+# XDG Base Directory Specification
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_DATA_HOME="$HOME/.local/share"
+export XDG_STATE_HOME="$HOME/.local/state"
+export XDG_CACHE_HOME="$HOME/.cache"
+
+# Application Configs
+export NOTMUCH_CONFIG="$XDG_CONFIG_HOME/notmuch-config"
+export WGETRC="$XDG_CONFIG_HOME/wget/wgetrc"
+export INPUTRC="$XDG_CONFIG_HOME/shell/inputrc"
+export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
+export WINEPREFIX="$XDG_DATA_HOME/wineprefixes/default"
+export PASSWORD_STORE_DIR="$XDG_DATA_HOME/password-store"
+export PYTHONSTARTUP="$XDG_CONFIG_HOME/python/pythonrc"
+export SQLITE_HISTORY="$XDG_DATA_HOME/sqlite_history"
+export GNUPGHOME="$XDG_DATA_HOME/gnupg"
+export CUDA_CACHE_PATH="$XDG_CACHE_HOME/nv"
+export TEXMFVAR="$XDG_CACHE_HOME/texlive/texmf-var"
+export GTK2_RC_FILES="$XDG_CONFIG_HOME/gtk-2.0/gtkrc"
+export DOTNET_CLI_HOME="$XDG_DATA_HOME/dotnet"
+
+# Package Managers
+export GOPATH="$XDG_DATA_HOME/go"
+export NPM_CONFIG_INIT_MODULE="$XDG_CONFIG_HOME/npm/config/npm-init.js"
+export NPM_CONFIG_CACHE="$XDG_CACHE_HOME/npm"
+export NPM_CONFIG_TMP="$XDG_RUNTIME_DIR/npm"
+export RUSTUP_HOME="$XDG_DATA_HOME/rustup"
+
+# Default Programs
+export EDITOR="nvim"
+export VISUAL="nvim"
+
+# Tool Settings
+export TRITON_HOME="$XDG_CACHE_HOME/triton"
+export WAKATIME_HOME="$XDG_CONFIG_HOME/wakatime"
+export FZF_DEFAULT_OPTS="--layout=reverse --height 40%"
+export QT_QPA_PLATFORMTHEME="qt6ct"
+export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+export XCURSOR_SIZE=24
+
+# AMD GPU Optimizations
+export LIBVA_DRIVER_NAME=radeonsi
+export VDPAU_DRIVER=radeonsi
+export AMD_VULKAN_ICD=RADV
+export XCURSOR_THEME="Adwaita"

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+qs_bin=${QS_BIN:-/usr/bin/qs}
+timeout_bin=${TIMEOUT_BIN:-/usr/bin/timeout}
+sleep_bin=${SLEEP_BIN:-/usr/bin/sleep}
+date_bin=${DATE_BIN:-/usr/bin/date}
+logger_bin=${LOGGER_BIN:-/usr/bin/logger}
+budget_ms=${LOCK_BUDGET_MS:-3500}
+deadline_ms=$(( $($date_bin +%s%3N) + budget_ms ))
+
+# The IPC reply only proves that the request landed. Wait until the compositor
+# confirms the ext-session-lock is secure before releasing logind's delay lock.
+$timeout_bin 1 "$qs_bin" ipc call lock lock >/dev/null 2>&1 || true
+
+while (( $($date_bin +%s%3N) < deadline_ms )); do
+    status=$($timeout_bin 0.4 "$qs_bin" ipc call lock status 2>/dev/null || true)
+    case $status in
+        *'"secure":true'*) exit 0 ;;
+    esac
+    $sleep_bin 0.1
+done
+
+$logger_bin -t luke-quickshell "session lock did not become secure before suspend"
+exit 1

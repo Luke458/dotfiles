@@ -1,0 +1,49 @@
+#!/usr/bin/env sh
+set -eu
+
+shell_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+qs_command="$shell_root/scripts/qs"
+config_path="$shell_root/shell.qml"
+
+lock_status=$("$qs_command" ipc call lock status 2>/dev/null || true)
+if [ -n "$lock_status" ] && printf '%s' "$lock_status" | jq -e '.locked or .requested or .pending or .sessionLocked or .secure' >/dev/null 2>&1; then
+    printf '%s\n' "Refusing to restart Quickshell while the session lock is active or pending." >&2
+    exit 75
+fi
+
+instance_json=$("$qs_command" list -j 2>/dev/null || true)
+if ! printf '%s' "$instance_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    instance_json='[]'
+fi
+instance_pids=$(printf '%s' "$instance_json" | jq -r --arg path "$config_path" '.[] | select(.config_path == $path) | .pid')
+
+for instance_pid in $instance_pids; do
+    "$qs_command" kill --pid "$instance_pid"
+done
+
+for instance_pid in $instance_pids; do
+    wait_count=0
+    while kill -0 "$instance_pid" 2>/dev/null; do
+        wait_count=$((wait_count + 1))
+        if [ "$wait_count" -ge 100 ]; then
+            printf 'Quickshell process %s did not exit within 5 seconds.\n' "$instance_pid" >&2
+            exit 1
+        fi
+        sleep 0.05
+    done
+done
+
+uwsm app -s b -t service -a luke-quickshell -d "Luke Quickshell" -- "$shell_root/scripts/launch-shell"
+
+ready_count=0
+while [ "$ready_count" -lt 100 ]; do
+    if "$qs_command" list -j | jq -e --arg path "$config_path" '.[] | select(.config_path == $path)' >/dev/null 2>&1 \
+        && "$qs_command" ipc call shell pickerStatus >/dev/null 2>&1; then
+        exit 0
+    fi
+    ready_count=$((ready_count + 1))
+    sleep 0.05
+done
+
+printf '%s\n' "Quickshell did not become IPC-ready within 5 seconds." >&2
+exit 1

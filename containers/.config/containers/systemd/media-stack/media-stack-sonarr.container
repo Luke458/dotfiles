@@ -1,0 +1,27 @@
+[Unit]
+Description=Sonarr TV automation
+PartOf=media-stack.target
+
+[Container]
+Image=lscr.io/linuxserver/sonarr:latest
+ContainerName=sonarr
+AutoUpdate=registry
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=UMASK=002
+Environment=TZ=Etc/UTC
+Volume=/home/luke/media-stack/config/sonarr:/config
+Volume=/home/luke/data:/data
+PublishPort=8989:8989
+Network=media-stack.network
+NetworkAlias=sonarr
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=media-stack.target
+
+[Quadlet]
+DefaultDependencies=false

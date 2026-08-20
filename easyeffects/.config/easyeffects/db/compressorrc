@@ -1,0 +1,6 @@
+[soe][Compressor#0]
+attack=5
+bypass=true
+makeup=3
+stereoSplit=true
+threshold=-18

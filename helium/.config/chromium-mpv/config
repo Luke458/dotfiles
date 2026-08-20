@@ -1,0 +1,33 @@
+# chromium-mpv user configuration. This file is sourced by Bash.
+
+# Optional browser cookies. Leave empty for unauthenticated streaming.
+# Chromium example:
+# COOKIES_BROWSER="chromium"
+# Helium example (replace the path/profile if necessary):
+# COOKIES_BROWSER="chromium:$HOME/.config/net.imput.helium/Default"
+COOKIES_BROWSER="chromium:$HOME/.config/net.imput.helium/Default"
+
+# For YouTube only, cache its domain cookies in a private mode-0600 file
+# so yt-dlp does not decrypt the complete browser database for every action.
+# Stale or failed refreshes safely fall back to COOKIES_BROWSER.
+COOKIE_CACHE_ENABLED=1
+COOKIE_CACHE_TTL=3600
+COOKIE_CACHE_FILE="${XDG_CACHE_HOME:-$HOME/.cache}/chromium-mpv/youtube-cookies.txt"
+
+# mpv settings. Arrays preserve every argument exactly without eval.
+MPV_PROFILE=""
+MPV_ARGS=()
+# MPV_ARGS=(--fullscreen --save-position-on-quit)
+
+# yt-dlp download settings.
+DOWNLOAD_DIR="$HOME/Downloads"
+DOWNLOAD_OUTPUT_TEMPLATE='%(title)s [%(id)s].%(ext)s'
+YTDLP_ARGS=(--embed-metadata)
+# YTDLP_ARGS=(--embed-metadata --embed-thumbnail)
+
+# notify-send is optional. Start and failure notifications use
+# ENABLE_NOTIFICATIONS; the start notice and successful download notice can be
+# controlled independently. mpv does not notify again when the player closes.
+ENABLE_NOTIFICATIONS=1
+NOTIFY_ON_START=1
+NOTIFY_ON_SUCCESS=1

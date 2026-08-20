@@ -1,0 +1,34 @@
+#!/usr/bin/env sh
+set -eu
+
+root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+build_import_path="$root/plugins/pinentry/build/qml"
+installed_import_path="${XDG_DATA_HOME:-"$HOME/.local/share"}/qml"
+
+append_import_path() {
+    if [ -n "${1:-}" ]; then
+        printf '%s:%s' "$module_import_paths" "$1"
+    else
+        printf '%s' "$module_import_paths"
+    fi
+}
+
+if [ -d "$build_import_path" ]; then
+    module_import_paths="$build_import_path:$installed_import_path"
+elif [ -d "$installed_import_path/Luke/Quickshell/Pinentry" ]; then
+    module_import_paths="$installed_import_path"
+else
+    echo "Pinentry QML module is not available. Run: $root/scripts/build-pinentry-plugin" >&2
+    exit 1
+fi
+
+QML2_IMPORT_PATH=$(append_import_path "${QML2_IMPORT_PATH:-}")
+QML_IMPORT_PATH=$(append_import_path "${QML_IMPORT_PATH:-}")
+export QML2_IMPORT_PATH QML_IMPORT_PATH
+
+quickshell_bin=${QUICKSHELL_BIN:-"$HOME/.local/bin/quickshell"}
+if [ ! -x "$quickshell_bin" ]; then
+    quickshell_bin=$(command -v quickshell)
+fi
+
+exec "$quickshell_bin" "$@"

@@ -1,0 +1,23 @@
+# Local and editor state
+*~
+*.bak
+*.swp
+*.tmp
+.DS_Store
+
+# Credentials and private material must never enter this repository.
+**/.env
+**/.env.*
+**/*credentials*
+**/*private-key*
+**/*private_key*
+**/*secret*
+**/*token*
+**/id_*
+**/hosts.yml
+
+# Generated caches and build products
+**/__pycache__/
+**/*.pyc
+**/.cache/
+**/plugins/pinentry/build/

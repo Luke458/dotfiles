@@ -154,7 +154,6 @@ noto-fonts-cjk
 noto-fonts-emoji
 npm
 nss-mdns
-nsxiv
 ntfs-3g
 ntp
 openai-codex

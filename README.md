@@ -29,7 +29,7 @@ target files become the repository copies.
 
 - Desktop shell: `hypr`, `quickshell`, `uwsm`, `desktop`, `theme`
 - Terminal and shell: `zsh`, `kitty`, `git`
-- Editors and file tools: `nvim`, `yazi`, `imv`, `nsxiv`
+- Editors and file tools: `nvim`, `yazi`, `imv`
 - Media and monitoring: `mpv`, `cava`, `btop`, `fastfetch`, `easyeffects`
 - System integration: `systemd`, `containers`, `pinentry`, `helium`, `scripts`
 - Package tooling: `pacman`, `paru`

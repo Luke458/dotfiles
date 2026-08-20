@@ -6,7 +6,7 @@ target_dir="${STOW_TARGET:-$HOME}"
 
 all_packages=(
   btop cava containers desktop easyeffects fastfetch git glow helium hypr imv
-  kitty mpv nsxiv nvim pacman paru pinentry quickshell scripts systemd theme
+  kitty mpv nvim pacman paru pinentry quickshell scripts systemd theme
   uwsm yazi zsh
 )
 

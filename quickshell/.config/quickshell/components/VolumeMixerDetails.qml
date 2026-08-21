@@ -122,16 +122,21 @@ Item {
                             spacing: Theme.spacingSection
                             
                             IconImage {
+                                id: appIconImage
+                                // Track the failed URL instead of assigning
+                                // `source` imperatively, which would destroy
+                                // the binding and freeze the icon forever.
+                                property string failedSource: ""
                                 source: {
                                     const icon = Volume.getAppIcon(appDelegate.modelData);
-                                    if (icon.startsWith("file://") || icon.startsWith("image://")) {
-                                        return icon;
-                                    }
-                                    return "image://icon/" + icon;
+                                    const resolved = (icon.startsWith("file://") || icon.startsWith("image://"))
+                                        ? icon
+                                        : "image://icon/" + icon;
+                                    return resolved === failedSource ? "image://icon/audio-card" : resolved;
                                 }
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
-                                onStatusChanged: if (status === Image.Error) source = "image://icon/audio-card"
+                                onStatusChanged: if (status === Image.Error) failedSource = Volume.getAppIcon(appDelegate.modelData)
                             }
                             
                             Text {

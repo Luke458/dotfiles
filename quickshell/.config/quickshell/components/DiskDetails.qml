@@ -8,7 +8,10 @@ import "../services"
 
 Item {
     id: root
-    
+
+    Component.onCompleted: Stats.acquireDiskDetails()
+    Component.onDestruction: Stats.releaseDiskDetails()
+
     implicitWidth: 350
     implicitHeight: Math.min(600, layout.implicitHeight + 40)
 

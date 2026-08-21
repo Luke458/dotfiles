@@ -89,11 +89,20 @@ PanelWindow { // qmllint disable uncreatable-type
                 spacing: Theme.spacingSection
 
                 IconImage {
-                    source: root.flow && root.flow.iconName ? "image://icon/" + root.flow.iconName : "image://icon/dialog-password"
+                    id: flowIcon
+                    // Track the failed URL instead of assigning `source`
+                    // imperatively, which would destroy the binding.
+                    property string failedSource: ""
+                    source: {
+                        const resolved = root.flow && root.flow.iconName
+                            ? "image://icon/" + root.flow.iconName
+                            : "image://icon/dialog-password";
+                        return resolved === failedSource ? "image://icon/dialog-password" : resolved;
+                    }
                     Layout.preferredWidth: 28
                     Layout.preferredHeight: 28
                     Layout.alignment: Qt.AlignTop
-                    onStatusChanged: if (status === Image.Error) source = "image://icon/dialog-password"
+                    onStatusChanged: if (status === Image.Error) failedSource = root.flow && root.flow.iconName ? "image://icon/" + root.flow.iconName : ""
                 }
 
                 ColumnLayout {

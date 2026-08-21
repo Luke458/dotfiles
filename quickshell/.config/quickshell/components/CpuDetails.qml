@@ -192,11 +192,15 @@ Item {
                 rowSpacing: 12
 
                 Repeater {
-                    model: Stats.cpuCores
+                    // Bound to the diffed ListModel: delegates update in place
+                    // instead of being rebuilt on every 2 s poll.
+                    model: Stats.cpuCoresModel
 
                     delegate: ColumnLayout {
                         id: coreDelegate
-                        required property var modelData
+                        required property string name
+                        required property int usage
+                        required property int clock
                         Layout.fillWidth: true
                         Layout.preferredWidth: Math.max(120, (coreGrid.width - coreGrid.columnSpacing) / 2)
                         spacing: Theme.spacingCompact
@@ -205,7 +209,7 @@ Item {
                             Layout.fillWidth: true
 
                             Text {
-                                text: coreDelegate.modelData.name + (coreDelegate.modelData.clock >= 0 ? "  " + root.clockText(coreDelegate.modelData.clock) : "")
+                                text: coreDelegate.name + (coreDelegate.clock >= 0 ? "  " + root.clockText(coreDelegate.clock) : "")
                                 color: Theme.fg
                                 font.family: Theme.fontMono
                                 font.pixelSize: Theme.fontSizeLabel
@@ -214,7 +218,7 @@ Item {
                             }
 
                             Text {
-                                text: coreDelegate.modelData.usage + "%"
+                                text: coreDelegate.usage + "%"
                                 color: Theme.selFg
                                 font.family: Theme.fontMono
                                 font.pixelSize: Theme.fontSizeLabel
@@ -230,10 +234,10 @@ Item {
                             opacity: Theme.opacityMuted
 
                             Rectangle {
-                                width: Math.max(parent.radius * 2, (coreDelegate.modelData.usage / 100) * parent.width)
+                                width: Math.max(parent.radius * 2, (coreDelegate.usage / 100) * parent.width)
                                 height: parent.height
                                 radius: Theme.radiusCompact
-                                color: root.usageColor(coreDelegate.modelData.usage)
+                                color: root.usageColor(coreDelegate.usage)
 
                                 Behavior on width {
                                     NumberAnimation { duration: 500; easing.type: Easing.OutCubic }
@@ -248,7 +252,7 @@ Item {
                 text: "COLLECTING DATA..."
                 color: Theme.fg
                 font.family: Theme.fontMono
-                visible: Stats.cpuCores.length === 0
+                visible: Stats.cpuCoresModel.count === 0
                 Layout.alignment: Qt.AlignHCenter
             }
 

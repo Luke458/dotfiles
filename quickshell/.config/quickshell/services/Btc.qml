@@ -19,6 +19,9 @@ QtObject {
     property bool   stale:       false
     property string lastUpdated: ""
     property bool   hasCachedData: prices.length > 0
+    // Set when the current fetch run parsed at least one good line; lets the
+    // exit handler distinguish "handled" from "died without output".
+    property bool   _runHadData: false
 
     // ── Fetch process ────────────────────────────────────────────────────────
     property Process fetchProc: Process {
@@ -29,11 +32,13 @@ QtObject {
                 try {
                     const d = JSON.parse(data)
                     if (d.error) {
+                        root._runHadData = true
                         root.hasError = !root.hasCachedData
                         root.loading  = false
                         root.stale    = root.hasCachedData
                         return
                     }
+                    root._runHadData = true
                     root.prices     = d.prices      || []
                     root.currentUsd = d.current_usd || 0
                     root.currentAud = d.current_aud || 0
@@ -53,11 +58,13 @@ QtObject {
         }
 
         onRunningChanged: {
-            if (!running && root.loading) {
-                root.hasError = !root.hasCachedData
-                root.loading  = false
-                root.stale    = root.hasCachedData
-            }
+            if (running) return
+            // A background refresh that dies without producing output must not
+            // leave cached prices presented as fresh forever.
+            if (root._runHadData) return
+            root.hasError = !root.hasCachedData
+            root.loading  = false
+            root.stale    = root.hasCachedData
         }
     }
 
@@ -73,6 +80,7 @@ QtObject {
     // ── Manual refresh ────────────────────────────────────────────────────────
     function refresh() {
         if (root.fetchProc.running) return
+        root._runHadData = false
         root.loading = !root.hasCachedData
         root.fetchProc.running = true
     }

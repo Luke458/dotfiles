@@ -5,17 +5,38 @@ import Quickshell.Io
 // Compatibility entrypoint. The real picker is a lazy surface in shell.qml.
 ShellRoot {
     id: root
+    readonly property string qsBin: Quickshell.env("QUICKSHELL_BIN") || "quickshell"
     readonly property string menuFile: Quickshell.env("QS_MENU_FILE") || ""
     readonly property string mode: menuFile ? "menu" : "launcher"
     readonly property string payload: JSON.stringify({
         file: menuFile,
         prompt: Quickshell.env("QS_MENU_PROMPT") || (menuFile ? "Select:" : "Run:")
     })
+    property bool finished: false
 
     Process {
         id: openProcess
-        command: ["quickshell", "ipc", "call", "shell", "openPicker", root.mode, root.payload]
-        onExited: Qt.quit() // qmllint disable signal-handler-parameters
+        command: [root.qsBin, "ipc", "call", "shell", "openPicker", root.mode, root.payload]
+        onExited: exitCode => { // qmllint disable signal-handler-parameters
+            if (exitCode !== 0)
+                console.error("openPicker ipc failed with exit code " + exitCode);
+            root.finished = true;
+            Qt.quit();
+        } // qmllint enable signal-handler-parameters
+    }
+
+    // On FailedToStart Quickshell emits runningChanged but never exited; this
+    // watchdog prevents an immortal windowless instance.
+    Timer {
+        interval: 15000
+        running: true
+        repeat: false
+        onTriggered: {
+            if (!root.finished) {
+                console.error("picker ipc did not complete (spawn failure or timeout)");
+                Qt.quit();
+            }
+        }
     }
 
     Component.onCompleted: openProcess.running = true

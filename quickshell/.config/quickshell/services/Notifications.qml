@@ -44,7 +44,12 @@ QtObject {
     property var liveNotifications: ({})
     property var unreadNotifications: ({})
     property var popupTimers: ({})
+    // Insertion order for liveNotifications so stale entries can be evicted
+    // when apps never send CloseNotification.
+    property var liveOrder: []
     readonly property int maximumHistoryItems: 200
+    readonly property int maximumTrackedNotifications: 50
+    readonly property int maximumVisiblePopups: 5
     readonly property string stateDirectory: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/quickshell"
     readonly property string stateFile: stateDirectory + "/notifications.json"
     property bool stateReady: false
@@ -128,8 +133,16 @@ QtObject {
             }
 
             const trackingId = notification.id + "_" + Date.now();
-            
+
             root.liveNotifications[trackingId] = notification;
+            root.liveOrder.push(trackingId);
+            while (root.liveOrder.length > root.maximumTrackedNotifications) {
+                const evicted = root.liveOrder.shift();
+                if (evicted !== trackingId) {
+                    delete root.liveNotifications[evicted];
+                    root.removeFromPopupsById(evicted);
+                }
+            }
             const item = root.notificationItem(notification, trackingId);
 
             // Transient notifications may be shown as toasts, but must not be
@@ -140,8 +153,10 @@ QtObject {
                 root.trimHistory();
             }
             const showPopup = !root.doNotDisturb || notification.urgency === NotificationUrgency.Critical;
-            if (showPopup)
+            if (showPopup) {
                 root.popups.insert(0, item);
+                root.trimPopups();
+            }
 
             const updateSnapshot = () => root.updateNotificationSnapshot(trackingId, notification);
             notification.summaryChanged.connect(updateSnapshot);
@@ -203,6 +218,10 @@ QtObject {
     }
 
     function updateNotificationSnapshot(trackingId, notification) {
+        // Once a notification has been closed or dismissed it must not
+        // resurrect in history via late property updates on the tracked object.
+        if (!root.liveNotifications[trackingId])
+            return;
         const item = notificationItem(notification, trackingId);
         const hasHistoryItem = updateModelItem(history, trackingId, item);
         const hasPopupItem = updateModelItem(popups, trackingId, item);
@@ -255,13 +274,41 @@ QtObject {
         schedulePersist();
     }
 
+    function trimPopups() {
+        // Bound the toast stack: prefer dropping the oldest non-critical
+        // popup; only fall back to a critical when everything is critical.
+        while (popups.count > maximumVisiblePopups) {
+            let index = -1;
+            for (let i = popups.count - 1; i >= 0; i--) {
+                const candidate = popups.get(i);
+                if (candidate && Number(candidate.urgency) !== NotificationUrgency.Critical) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index < 0)
+                index = popups.count - 1;
+            const victim = popups.get(index);
+            if (!victim)
+                break;
+            removeFromPopupsById(victim.trackingId);
+        }
+    }
+
     function removeByTrackingId(trackingId) {
         removeFromHistoryById(trackingId);
         removeFromPopupsById(trackingId);
     }
 
-    function handleNotificationClosed(trackingId) {
+    function forgetLiveNotification(trackingId) {
         delete root.liveNotifications[trackingId];
+        const index = root.liveOrder.indexOf(trackingId);
+        if (index >= 0)
+            root.liveOrder.splice(index, 1);
+    }
+
+    function handleNotificationClosed(trackingId) {
+        root.forgetLiveNotification(trackingId);
         removeFromPopupsById(trackingId);
     }
 
@@ -317,7 +364,7 @@ QtObject {
             } catch (e) {}
         }
 
-        delete root.liveNotifications[trackingId];
+        root.forgetLiveNotification(trackingId);
         removeByTrackingId(trackingId);
     }
 
@@ -332,6 +379,7 @@ QtObject {
             }
         }
         root.liveNotifications = ({});
+        root.liveOrder = [];
         root.unreadNotifications = ({});
         for (const trackingId in root.popupTimers)
             root.cancelPopupTimer(trackingId);
@@ -527,6 +575,14 @@ QtObject {
         return bestScore >= 60 ? bestToplevel : null;
     }
 
+    function luaString(value) {
+        return "\"" + String(value)
+            .replace(/\\/g, "\\\\")
+            .replace(/"/g, "\\\"")
+            .replace(/\n/g, "\\n")
+            .replace(/\r/g, "\\r") + "\"";
+    }
+
     function focusToplevel(toplevel) {
         if (!toplevel || !toplevel.address) {
             return false;
@@ -537,7 +593,13 @@ QtObject {
             address = "0x" + address;
         }
 
-        Hyprland.dispatch("focuswindow address:" + address);
+        // Hyprland builds with Lua support evaluate dispatch() as Lua code;
+        // the raw shell-style form fails with a syntax error there.
+        if (Hyprland.usingLua) {
+            Hyprland.dispatch("hl.dsp.focuswindow(" + root.luaString("address:" + address) + ")");
+        } else {
+            Hyprland.dispatch("focuswindow address:" + address);
+        }
         return true;
     }
 

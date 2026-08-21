@@ -55,10 +55,27 @@ QtObject {
     }
 
     property Timer pollTimer: Timer {
-        interval: 30000
+        // No Hyprland event exists for config-keyword changes, so fall back to
+        // an occasional reconciliation; toggle() refreshes immediately.
+        interval: 120000
         running: true
         repeat: true
         triggeredOnStart: true
         onTriggered: root.refresh()
+    }
+
+    // Shared, coalesced monitor/workspace refresh so per-screen indicators
+    // reacting to the same Hyprland event trigger exactly one IPC pair.
+    property Timer hyprlandRefreshTimer: Timer {
+        interval: 150
+        repeat: false
+        onTriggered: {
+            Hyprland.refreshMonitors();
+            Hyprland.refreshWorkspaces();
+        }
+    }
+
+    function scheduleHyprlandRefresh() {
+        hyprlandRefreshTimer.restart();
     }
 }

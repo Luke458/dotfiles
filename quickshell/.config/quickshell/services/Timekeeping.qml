@@ -121,7 +121,9 @@ QtObject {
     }
 
     property Timer clockTimer: Timer {
-        interval: 100
+        // Wall-clock strings change at most once per second; only the stopwatch
+        // needs tenth-of-a-second resolution.
+        interval: root.stopwatchRunning ? 100 : 1000
         running: true
         repeat: true
         onTriggered: {

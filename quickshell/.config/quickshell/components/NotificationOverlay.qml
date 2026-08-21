@@ -29,9 +29,16 @@ PanelWindow { // qmllint disable uncreatable-type
 
     color: Theme.transparent
 
+    // Never let the toast stack grow past most of the screen.
+    readonly property real maxOverlayHeight: screen ? screen.height * 0.7 : 720
+
     // Size driven by layout
     implicitWidth: 362
-    implicitHeight: view.contentHeight + 12
+    implicitHeight: Math.min(view.contentHeight + 12, maxOverlayHeight)
+
+    // Only the cards themselves should take input; clicks in the transparent
+    // gaps must fall through to the windows below.
+    mask: Region { item: view }
 
     ListView {
         id: view
@@ -40,9 +47,10 @@ PanelWindow { // qmllint disable uncreatable-type
         anchors.topMargin: Theme.spacingTiny
         anchors.rightMargin: Theme.spacingCompact
         width: 350
-        height: view.contentHeight
+        height: Math.min(view.contentHeight, root.maxOverlayHeight - 12)
         spacing: Theme.spacingMedium
-        interactive: false
+        clip: true
+        interactive: view.contentHeight > view.height
 
         model: Notifications.popups
 

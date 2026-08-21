@@ -110,6 +110,15 @@ Item {
 
             property int selectedIndex: -1
 
+            // A raw index means nothing after the month changes; clear the
+            // selection so it cannot highlight a different month's day.
+            Connections {
+                target: Calendar
+                function onCalendarDaysChanged() {
+                    grid.selectedIndex = -1;
+                }
+            }
+
             Repeater {
                 model: Calendar.calendarDays
                 delegate: Item {
@@ -152,8 +161,11 @@ Item {
                         id: mouseArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: grid.selectedIndex = dayDelegate.index
+                        cursorShape: dayDelegate.modelData.isCurrentMonth ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: {
+                            if (dayDelegate.modelData.isCurrentMonth)
+                                grid.selectedIndex = dayDelegate.index
+                        }
                     }
                 }
             }

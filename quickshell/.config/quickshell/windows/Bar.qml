@@ -69,6 +69,11 @@ PanelWindow { // qmllint disable uncreatable-type
         trayMenuOverlay.toggle(menuHandle, anchorItem, window.screen);
     }
 
+    function closeTrayMenuIfAnchoredTo(item) {
+        if (trayMenuOverlay.anchorItem === item)
+            trayMenuOverlay.close();
+    }
+
     component ModuleRun: Row {
         id: moduleRun
         required property var modules

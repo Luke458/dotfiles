@@ -149,20 +149,18 @@ PanelWindow { // qmllint disable uncreatable-type
         }
     }
 
-    Timer {
-        interval: 250
-        repeat: true
-        running: root.visible && root.dismissOnHoverLeave && !hoverGraceTimer.running
-        onTriggered: root.updateHoverDismiss()
-    }
-
     MouseArea {
         id: overlayMouseArea
         anchors.fill: parent
         hoverEnabled: true
+        focus: true
         onClicked: root.close()
         onContainsMouseChanged: root.updateHoverDismiss()
         onPositionChanged: root.updateHoverDismiss()
+        Keys.onEscapePressed: event => { // qmllint disable signal-handler-parameters
+            event.accepted = true;
+            root.close();
+        } // qmllint enable signal-handler-parameters
     }
 
     Components.TrayMenu {

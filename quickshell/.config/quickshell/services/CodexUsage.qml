@@ -285,6 +285,10 @@ QtObject {
             rollingUpdateTimer.restart();
     }
 
+    // Exponential backoff for app-server restarts (e.g. while `codex` is
+    // missing), reset whenever a start succeeds.
+    property int restartBackoffMs: 30000
+
     function scheduleRestart(message) {
         root.initialized = false;
         root.loading = !root.hasData;
@@ -296,14 +300,20 @@ QtObject {
         requestWatchdog.stop();
         root.restartScheduled = true;
 
-        if (server.running)
-            server.running = false;
-        else
+        if (server.running) {
+            server.running = false; // backoff applied in onRunningChanged
+        } else {
+            root.restartTimer.interval = root.restartBackoffMs;
+            root.restartBackoffMs = Math.min(root.restartBackoffMs * 2, 600000);
             restartTimer.restart();
+        }
     }
 
     property Process server: Process {
-        command: ["codex", "-s", "read-only", "-a", "untrusted", "app-server", "--stdio"]
+        // codex-cli 0.149.0 removed the "untrusted" approval policy; the
+        // app-server here only answers read-only RPCs, so "never" is the
+        // equivalent-safe choice.
+        command: ["codex", "-s", "read-only", "-a", "never", "app-server", "--stdio"]
         stdinEnabled: true
         running: false
 
@@ -323,8 +333,11 @@ QtObject {
 
         onRunningChanged: {
             if (running) {
+                root.restartBackoffMs = 30000;
                 root.initializeTimer.restart();
             } else {
+                root.restartTimer.interval = root.restartBackoffMs;
+                root.restartBackoffMs = Math.min(root.restartBackoffMs * 2, 600000);
                 if (!root.restartScheduled)
                     root.scheduleRestart("Could not read Codex usage");
                 else
@@ -346,7 +359,6 @@ QtObject {
     }
 
     property Timer restartTimer: Timer {
-        interval: 30000
         repeat: false
         onTriggered: {
             root.restartScheduled = false;

@@ -149,7 +149,9 @@ QtObject {
     }
 
     property Timer refreshTimer: Timer {
-        interval: root.detailsConsumers > 0 ? 5000 : 15000
+        // Fast while a details popup consumes data; otherwise a slow
+        // background poll just keeps the bar indicator honest.
+        interval: root.detailsConsumers > 0 ? 5000 : 60000
         repeat: true
         running: true
         onTriggered: root.refresh()

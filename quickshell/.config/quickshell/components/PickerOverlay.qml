@@ -54,6 +54,12 @@ PanelWindow { // qmllint disable uncreatable-type
 
     ListModel { id: resultsModel }
 
+    // Generation guards: killing a scan still flushes its StdioCollector
+    // asynchronously, so late callbacks must not clobber a newer mode's data.
+    property int initSerial: 0
+    property int passwordScanSerial: -1
+    property int menuScanSerial: -1
+
     Process {
         id: passwordListProcess
         command: ["find", root.passwordStoreDir, "-type", "f", "-name", "*.gpg"]
@@ -106,6 +112,8 @@ PanelWindow { // qmllint disable uncreatable-type
     }
 
     function loadPasswords(text) {
+        if (passwordScanSerial !== initSerial)
+            return;
         const prefix = passwordStoreDir.endsWith("/") ? passwordStoreDir : passwordStoreDir + "/";
         const items = [];
         const lines = String(text || "").split("\n");
@@ -121,6 +129,8 @@ PanelWindow { // qmllint disable uncreatable-type
     }
 
     function loadMenuLines(text) {
+        if (menuScanSerial !== initSerial)
+            return;
         const lines = String(text || "").split("\n").map(line => line.replace(/\r$/, "")).filter(line => line.trim().length > 0);
         allItems = lines.map(line => ({ name: line, kind: "menu", genericName: "", metadata: "" }));
         statusText = lines.length > 0 ? "" : "No menu items";
@@ -131,6 +141,7 @@ PanelWindow { // qmllint disable uncreatable-type
         if (payload && payload.items instanceof Array) {
             loadMenuLines(payload.items.join("\n"));
         } else if (menuFile) {
+            menuScanSerial = initSerial;
             menuFileProcess.exec(["sed", "-n", "1,1000p", menuFile]);
         } else {
             statusText = "No menu items";
@@ -198,6 +209,7 @@ PanelWindow { // qmllint disable uncreatable-type
     }
 
     function initialize() {
+        const gen = ++initSerial;
         passwordListProcess.running = false;
         searchField.text = "";
         allItems = [];
@@ -206,6 +218,7 @@ PanelWindow { // qmllint disable uncreatable-type
         actionPending = false;
         if (mode === "pass") {
             statusText = "Loading passwords...";
+            passwordScanSerial = gen;
             passwordListProcess.running = true;
         } else if (mode === "power") {
             populatePower();

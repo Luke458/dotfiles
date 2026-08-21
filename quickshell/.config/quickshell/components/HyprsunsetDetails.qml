@@ -102,7 +102,12 @@ Item {
                     color: Theme.selFg
                 }
                 
-                onMoved: root.hyprsunset.setTemperature(value)
+                // Commit on release: onMoved per step would spawn a hyprctl
+                // process up to ~10x/second during a drag.
+                onPressedChanged: {
+                    if (!pressed)
+                        root.hyprsunset.setTemperature(value)
+                }
             }
         }
 
@@ -167,7 +172,11 @@ Item {
                     color: Theme.selFg
                 }
                 
-                onMoved: root.hyprsunset.setGamma(value)
+                // Commit on release (see temperature slider).
+                onPressedChanged: {
+                    if (!pressed)
+                        root.hyprsunset.setGamma(value)
+                }
             }
         }
         

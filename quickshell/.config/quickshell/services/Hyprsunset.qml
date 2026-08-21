@@ -2,6 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import Quickshell.Io
 
 QtObject {
@@ -12,7 +13,6 @@ QtObject {
     property int gamma: 100 // 100%
 
     // --- Configuration Scheduling properties ---
-    property string configContent: ""
     property var parsedProfiles: []
     property string lastActiveProfileTime: ""
 
@@ -31,17 +31,13 @@ QtObject {
         command: ["hyprctl", "hyprsunset", "gamma", root.gamma.toString()]
     }
 
-    // Process to read configuration file
-    property Process readConfigProc: Process {
-        command: ["sh", "-c", "cat $HOME/.config/hypr/hyprsunset.conf"]
-        running: false
-        stdout: SplitParser {
-            onRead: data => {
-                root.configContent += data + "\n";
-            }
-        }
-        onExited: { // qmllint disable signal-handler-parameters
-            root.parsedProfiles = root.parseConfig(root.configContent);
+    // Read the schedule config directly instead of spawning a shell `cat`;
+    // FileView also avoids concatenating stale content across re-reads.
+    property FileView configFile: FileView {
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/hypr/hyprsunset.conf"
+        printErrors: false
+        onLoaded: {
+            root.parsedProfiles = root.parseConfig(text());
             root.checkSchedule(true);
         }
     }
@@ -131,17 +127,17 @@ QtObject {
     }
 
     property Timer debounceTimer: Timer {
-        interval: 100
+        interval: 250
         onTriggered: root.applyTemperature()
     }
-    
+
     property Timer gammaDebounce: Timer {
-        interval: 100
+        interval: 250
         onTriggered: root.applyGamma()
     }
 
     Component.onCompleted: {
-        readConfigProc.running = true;
+        configFile.reload();
     }
 
     // --- Scheduling Helper Functions ---

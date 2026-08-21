@@ -57,6 +57,7 @@ QtObject {
 
     // --- Detailed Information ---
     property var cpuCores: []
+    property ListModel cpuCoresModel: ListModel {}
     property var drives: []
     property var memHogs: []
     property ListModel memHogsModel: ListModel {}
@@ -73,6 +74,7 @@ QtObject {
     property int cpuDetailConsumers: 0
     property int gpuDetailConsumers: 0
     property int memoryDetailConsumers: 0
+    property int diskDetailConsumers: 0
     
     property FileView cpuInfoFile: FileView { path: "/proc/cpuinfo"; blockLoading: true }
     property string cpuTempPath: ""
@@ -182,7 +184,9 @@ QtObject {
     }
 
     property Process gpuMetricsCheck: Process {
-        command: ["sh", "-c", "command -v amdgpu_top >/dev/null 2>&1 && amdgpu_top -J -gm"]
+        // amdgpu_top -J streams forever by default; -n 1 makes it exit after one
+        // snapshot so StdioCollector.onStreamFinished can fire and parse the JSON.
+        command: ["sh", "-c", "command -v amdgpu_top >/dev/null 2>&1 && amdgpu_top -J -gm -n 1"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: root.parseGpuMetrics(text)
@@ -269,6 +273,25 @@ QtObject {
         }
         while (listModel.count > newArray.length) {
             listModel.remove(listModel.count - 1);
+        }
+    }
+
+    function updateCpuCoreModel(newArray) {
+        // Diff into a ListModel so per-core delegates are updated in place
+        // instead of being destroyed and recreated on every poll.
+        for (let i = 0; i < newArray.length; i++) {
+            const newItem = newArray[i];
+            if (i < cpuCoresModel.count) {
+                const existing = cpuCoresModel.get(i);
+                if (existing.name !== newItem.name) cpuCoresModel.setProperty(i, "name", newItem.name);
+                if (existing.usage !== newItem.usage) cpuCoresModel.setProperty(i, "usage", newItem.usage);
+                if (existing.clock !== newItem.clock) cpuCoresModel.setProperty(i, "clock", newItem.clock);
+            } else {
+                cpuCoresModel.append(newItem);
+            }
+        }
+        while (cpuCoresModel.count > newArray.length) {
+            cpuCoresModel.remove(cpuCoresModel.count - 1);
         }
     }
 
@@ -473,14 +496,10 @@ QtObject {
     }
 
     function normalizePower(raw) {
+        // hwmon power*_input/power*_average report microwatts (see ABI note in
+        // processCpuPowerSample); magnitude guessing mis-scales idle readings.
         if (raw < 0) return -1;
-        let watts = raw;
-        if (raw > 100000) {
-            watts = raw / 1000000;
-        } else if (raw > 1000) {
-            watts = raw / 1000;
-        }
-        return Math.round(watts * 10) / 10;
+        return Math.round((raw / 1000000) * 10) / 10;
     }
 
     function normalizeFreq(raw) {
@@ -631,6 +650,15 @@ QtObject {
         memoryDetailConsumers = Math.max(0, memoryDetailConsumers - 1);
     }
 
+    function acquireDiskDetails() {
+        diskDetailConsumers++;
+        updateDisk();
+    }
+
+    function releaseDiskDetails() {
+        diskDetailConsumers = Math.max(0, diskDetailConsumers - 1);
+    }
+
     function updateCpuDetails() {
         updateCpuInfo();
         updateCpuTemp();
@@ -737,6 +765,7 @@ QtObject {
 
         _lastCpuStats = nextStats;
         cpuCores = cores;
+        updateCpuCoreModel(cores);
     }
 
     function updateCpuTemp() {
@@ -901,10 +930,23 @@ QtObject {
 
     property Timer diskTimer: Timer {
         interval: 60000
-        running: true
+        running: root.diskDetailConsumers > 0
         repeat: true
         triggeredOnStart: true
         onTriggered: root.updateDisk()
+    }
+
+    // Hardware can appear after boot (driver load, hotplug); re-run the cheap
+    // discovery probes until each path is resolved instead of giving up once.
+    property Timer discoveryRetryTimer: Timer {
+        interval: 30000
+        running: !root.cpuTempPath || !root.cpuPowerPath || !root.gpuDevicePath
+        repeat: true
+        onTriggered: {
+            if (!root.cpuTempPath && !root.cpuTempDiscovery.running) root.cpuTempDiscovery.running = true;
+            if (!root.cpuPowerPath && !root.cpuPowerDiscovery.running) root.cpuPowerDiscovery.running = true;
+            if (!root.gpuDevicePath && !root.gpuDiscovery.running) root.gpuDiscovery.running = true;
+        }
     }
 
     property Timer detailTimer: Timer {

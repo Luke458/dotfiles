@@ -36,7 +36,7 @@ Item {
                 height: trayRoot.iconSize
 
                 // Icon resolution strategy:
-                source: {
+                readonly property string primaryIconSource: {
                     let icon = "";
                     try { icon = modelData.icon; } catch (e) {}
 
@@ -57,35 +57,49 @@ Item {
                     if (iconName) return "image://icon/" + iconName;
 
                     // Last resort fallback
+                    return "image://icon/application-x-executable";
+                }
+
+                // Fallback for apps with non-standard icons or broken DBus
+                // properties (like Mullvad/Electron).
+                readonly property string fallbackIconSource: {
+                    const id = (modelData.id || "").toLowerCase();
+                    const toolTip = (modelData.toolTip || "").toLowerCase();
+                    let iconName = "";
+                    try {
+                        iconName = (modelData.iconName || "").toLowerCase();
+                    } catch (e) {}
+
+                    if (id.includes("vesktop") || iconName.includes("vesktop") ||
+                        id.includes("discord") || iconName.includes("discord")) {
+                        return "file:///usr/share/icons/hicolor/scalable/apps/vesktop.svg"
+                    } else if (id.includes("mullvad") || toolTip.includes("mullvad")) {
+                        return "image://icon/mullvad-vpn"
+                    } else if (id.includes("telegram") || iconName.includes("telegram")) {
+                        return "file:///usr/share/icons/hicolor/256x256/apps/org.telegram.desktop.png"
+                    } else if (id.includes("arch-update") || iconName.includes("arch-update")) {
+                        return "file:///usr/share/icons/hicolor/scalable/apps/cachy-update-blue.svg"
+                    } else if (id.includes("chrome_status_icon") && toolTip.includes("connected")) {
+                        // Generic Electron/Chrome ID but looks like a VPN
+                        return "image://icon/network-vpn"
+                    }
                     return "image://icon/application-x-executable"
                 }
 
-                onStatusChanged: {
-                    if (status === Image.Error) {
-                        const id = (modelData.id || "").toLowerCase();
-                        const toolTip = (modelData.toolTip || "").toLowerCase();
-                        let iconName = "";
-                        try {
-                            iconName = (modelData.iconName || "").toLowerCase();
-                        } catch (e) {}
+                // Remembering the failed primary URL keeps the fallback active
+                // without assigning `source` imperatively, so later SNI icon
+                // swaps still apply (and a changed URL is retried normally).
+                property string failedPrimarySource: ""
+                source: {
+                    const primary = primaryIconSource;
+                    return (primary === "" || primary === failedPrimarySource)
+                        ? fallbackIconSource
+                        : primary;
+                }
 
-                        // Fallback for apps with non-standard icons or broken DBus properties (like Mullvad/Electron)
-                        if (id.includes("vesktop") || iconName.includes("vesktop") ||
-                            id.includes("discord") || iconName.includes("discord")) {
-                            source = "file:///usr/share/icons/hicolor/scalable/apps/vesktop.svg"
-                        } else if (id.includes("mullvad") || toolTip.includes("mullvad")) {
-                            source = "image://icon/mullvad-vpn"
-                        } else if (id.includes("telegram") || iconName.includes("telegram")) {
-                            source = "file:///usr/share/icons/hicolor/256x256/apps/org.telegram.desktop.png"
-                        } else if (id.includes("arch-update") || iconName.includes("arch-update")) {
-                            source = "file:///usr/share/icons/hicolor/scalable/apps/cachy-update-blue.svg"
-                        } else if (id.includes("chrome_status_icon") && toolTip.includes("connected")) {
-                            // Generic Electron/Chrome ID but looks like a VPN
-                            source = "image://icon/network-vpn"
-                        } else {
-                            source = "image://icon/application-x-executable"
-                        }
-                    }
+                onStatusChanged: {
+                    if (status === Image.Error && source !== fallbackIconSource)
+                        failedPrimarySource = primaryIconSource;
                 }
 
                 MouseArea {
@@ -106,6 +120,13 @@ Item {
                             }
                         }
                     }
+                }
+
+                Component.onDestruction: {
+                    // If the SNI item vanishes while its menu is open, close
+                    // the menu instead of leaving a dangling DBusMenu handle.
+                    if (trayRoot.rootWindow)
+                        trayRoot.rootWindow.closeTrayMenuIfAnchoredTo(trayIcon)
                 }
             }
         }

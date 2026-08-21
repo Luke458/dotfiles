@@ -52,18 +52,25 @@ QtObject {
     }
 
     function refresh() {
+        // The helper streams updates on its own; killing and relaunching it
+        // would only open a data gap. Ensure it runs and let the stream
+        // deliver the next sample.
         root.loading = !root.hasBattery;
-        if (monitor.running)
-            monitor.running = false;
-        else
-            root.restartTimer.restart();
+        if (!monitor.running)
+            monitor.running = true;
     }
+
+    // Exponential backoff while the helper keeps dying, reset on good data.
+    property int restartBackoffMs: 3000
 
     property Process monitor: Process {
         command: [Quickshell.shellPath("scripts/attack-shark-metrics")]
 
         stdout: SplitParser {
-            onRead: data => root.applyLine(data)
+            onRead: data => {
+                root.applyLine(data);
+                root.restartBackoffMs = 3000;
+            }
         }
 
         stderr: SplitParser {
@@ -82,12 +89,13 @@ QtObject {
                 return;
             root.connected = false;
             root.stale = root.hasBattery;
+            root.restartTimer.interval = root.restartBackoffMs;
+            root.restartBackoffMs = Math.min(root.restartBackoffMs * 2, 60000);
             root.restartTimer.restart();
         }
     }
 
     property Timer restartTimer: Timer {
-        interval: 3000
         repeat: false
         onTriggered: {
             if (!root.monitor.running)

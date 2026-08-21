@@ -54,7 +54,7 @@ Rectangle {
             spacing: Components.Theme.spacingLarge
 
             Text {
-                text: String(Quickshell.env("USER") ?? "").toUpperCase()
+                text: String(Quickshell.env("USER") || Quickshell.env("LOGNAME") || "").toUpperCase()
                 color: Components.Theme.selFg
                 font.pixelSize: Components.Theme.fontSizeDisplayLarge
                 font.family: Components.Theme.fontMono

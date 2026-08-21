@@ -14,7 +14,8 @@ QtObject {
     property var metadata: activePlayer && activePlayer.metadata ? activePlayer.metadata : null
     property string trackTitle: metadata ? (metadata["xesam:title"] || "") : ""
     property var artistArray: metadata ? metadata["xesam:artist"] : null
-    property string trackArtist: artistArray && artistArray.length > 0 ? artistArray[0] : ""
+    // The spec says array-of-strings, but some players send a bare string.
+    property string trackArtist: Array.isArray(artistArray) ? (artistArray[0] || "") : (artistArray || "")
     property string trackAlbum: metadata ? (metadata["xesam:album"] || "") : ""
     property string albumArtUrl: metadata ? (metadata["mpris:artUrl"] || "") : ""
     property real trackLength: metadata ? (metadata["mpris:length"] || 0) : 0
@@ -38,6 +39,14 @@ QtObject {
     // Browser filter list
     readonly property var browserIdentities: ["firefox", "chrome", "chromium", "brave", "edge", "opera"]
 
+    function playerTier(p) {
+        const identity = (p.identity || "").toLowerCase();
+        const isBrowser = browserIdentities.some(id => identity.includes(id));
+        if (!isBrowser)
+            return p.playbackState === MprisPlaybackState.Playing ? 0 : 1;
+        return p.playbackState === MprisPlaybackState.Playing ? 2 : 3;
+    }
+
     function updateActivePlayer() {
         const players = Mpris.players.values;
         if (players.length === 0) {
@@ -45,40 +54,27 @@ QtObject {
             return;
         }
 
-        let bestPlayer = null;
-        let fallbackPlayer = null;
-
+        let best = null;
+        let bestTier = 99;
         for (let i = 0; i < players.length; i++) {
-            const p = players[i];
-            const identity = (p.identity || "").toLowerCase();
-            const isBrowser = browserIdentities.some(id => identity.includes(id));
-            
-            if (!isBrowser) {
-                // Priority 1: Standalone player that is playing
-                if (p.playbackState === MprisPlaybackState.Playing) {
-                    activePlayer = p;
-                    return;
-                }
-                // Priority 2: Standalone player that is paused
-                bestPlayer = p;
-            } else {
-                // Priority 3: Browser player that is playing
-                if (p.playbackState === MprisPlaybackState.Playing) {
-                    fallbackPlayer = p;
-                } else if (!fallbackPlayer) {
-                    // Priority 4: Browser player that is paused
-                    fallbackPlayer = p;
-                }
+            const tier = playerTier(players[i]);
+            // Among equal-tier candidates prefer the incumbent so the UI does
+            // not flip-flop between equivalent players on every state change.
+            if (tier < bestTier || (tier === bestTier && players[i] === activePlayer)) {
+                best = players[i];
+                bestTier = tier;
             }
         }
-        
-        activePlayer = bestPlayer || fallbackPlayer;
+        activePlayer = best;
     }
 
     function togglePlayPause() {
         if (!activePlayer) return;
-        if (playbackState === MprisPlaybackState.Playing) activePlayer.pause();
-        else activePlayer.play();
+        if (playbackState === MprisPlaybackState.Playing) {
+            if (canPause) activePlayer.pause();
+        } else if (canPlay) {
+            activePlayer.play();
+        }
     }
 
     function next() { if (activePlayer && canGoNext) activePlayer.next(); }

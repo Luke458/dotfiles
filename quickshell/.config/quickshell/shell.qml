@@ -56,6 +56,12 @@ ShellRoot {
         function isLocked(): bool {
             return Lock.locked;
         }
+
+        function cancel(): bool {
+            // Recovers a stuck unconfirmed lock request; refuses while the
+            // session is actually locked.
+            return Lock.cancelRequest();
+        }
     }
 
     IpcHandler {

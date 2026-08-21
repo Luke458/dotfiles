@@ -34,6 +34,21 @@ QtObject {
         return true;
     }
 
+    function cancelRequest(): bool {
+        // Withdraw a lock request that was never confirmed by the compositor
+        // (e.g. denied or raced). A live session lock must be unlocked
+        // normally; killing the shell while it owns WlSessionLock would leave
+        // conformant compositors locked.
+        if (sessionLocked || secure)
+            return false;
+        requested = false;
+        pending = false;
+        authInProgress = false;
+        authFailed = false;
+        pendingPassword = "";
+        return true;
+    }
+
     function updateSessionState(isLocked: bool, isSecure: bool): void {
         sessionLocked = isLocked;
         secure = isSecure;

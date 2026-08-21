@@ -258,6 +258,7 @@ Item {
             MouseArea {
                 implicitWidth:  refreshIcon.implicitWidth + 8
                 implicitHeight: refreshIcon.implicitHeight
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: Btc.refresh()
 

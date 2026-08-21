@@ -37,6 +37,10 @@ Item {
                     anchors.fill: parent
                     source: Media.albumArtUrl || "image://icon/media-optical"
                     fillMode: Image.PreserveAspectCrop
+                    // MPRIS art is frequently 1000px+; decode small and async.
+                    asynchronous: true
+                    sourceSize.width: 160
+                    sourceSize.height: 160
                 }
             }
             
@@ -138,7 +142,13 @@ Item {
                 Layout.fillWidth: true
                 from: 0
                 to: 1
-                value: (Media.trackLength > 0) ? (Media.currentPosition * 1e6 / Media.trackLength) : 0
+                // Live position updates fight the handle during a drag, and
+                // onMoved fires a D-Bus seek per pixel; only follow playback
+                // while not pressed and commit the seek on release.
+                Binding on value {
+                    value: (Media.trackLength > 0) ? (Media.currentPosition * 1e6 / Media.trackLength) : 0
+                    when: !progressSlider.pressed
+                }
                 
                 background: Rectangle {
                     x: progressSlider.leftPadding
@@ -169,7 +179,13 @@ Item {
                     visible: progressSlider.hovered || progressSlider.pressed
                 }
                 
-                onMoved: Media.seek(value)
+                property real seekPreview: 0
+                onMoved: seekPreview = value
+
+                onPressedChanged: {
+                    if (!pressed && Media.trackLength > 0)
+                        Media.seek(seekPreview)
+                }
             }
             
             RowLayout {

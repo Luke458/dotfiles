@@ -80,12 +80,22 @@ Rectangle {
         spacing: Theme.spacingLarge
 
         IconImage {
-            source: root.iconSource()
+            id: appIconImage
+            // Remember which URL failed so the fallback survives Image.Error
+            // without destroying the declarative source binding; a new icon
+            // URL from an app-icon update is retried normally.
+            property string failedSource: ""
+            source: {
+                const resolved = root.iconSource();
+                return resolved !== "" && resolved === failedSource
+                    ? "image://icon/dialog-information"
+                    : resolved;
+            }
             Layout.preferredWidth: 32
             Layout.preferredHeight: 32
             Layout.alignment: Qt.AlignTop
-            visible: source !== ""
-            onStatusChanged: if (status === Image.Error) source = "image://icon/dialog-information"
+            visible: root.iconSource() !== ""
+            onStatusChanged: if (status === Image.Error) failedSource = root.iconSource()
         }
         
         // Content

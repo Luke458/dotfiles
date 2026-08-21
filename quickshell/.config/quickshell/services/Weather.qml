@@ -101,17 +101,23 @@ QtObject {
 
     property var searchResults: []
     property bool searchLoading: false
+    // Guards against out-of-order responses clobbering newer results.
+    property int _searchSeq: 0
+    property int _fetchSeq: 0
 
     function searchLocation(query) {
         if (!query || query.length < 2) {
+            _searchSeq++;
             searchResults = [];
             return ;
         }
         searchLoading = true;
+        const seq = ++_searchSeq;
         var xhr = new XMLHttpRequest();
         var url = "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(query) + "&count=5&language=en&format=json";
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (seq !== _searchSeq) return;
                 searchLoading = false;
                 if (xhr.status === 200) {
                     try {
@@ -136,16 +142,19 @@ QtObject {
 
         loading = true;
         error = "";
-        
+        const seq = ++_fetchSeq;
+
         var xhr = new XMLHttpRequest();
-        var url = "https://api.open-meteo.com/v1/forecast?latitude=" + latitude + "&longitude=" + longitude + 
-                 "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,precipitation_probability,uv_index" + 
+        var url = "https://api.open-meteo.com/v1/forecast?latitude=" + latitude + "&longitude=" + longitude +
+                 "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,precipitation_probability,uv_index" +
                  "&hourly=temperature_2m,weather_code,precipitation_probability" +
-                 "&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max&timezone=auto" + 
-                 "&temperature_unit=" + unit;
-                 
+                 "&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max&timezone=auto" +
+                 "&temperature_unit=" + unit +
+                 "&wind_speed_unit=" + (unit === "fahrenheit" ? "mph" : "kmh");
+
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (seq !== _fetchSeq) return;
                 loading = false;
                 if (xhr.status === 200) {
                     try {

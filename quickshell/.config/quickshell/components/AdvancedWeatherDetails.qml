@@ -271,35 +271,37 @@ Item {
         return Math.round(Weather.dailyForecast.precipitation_probability_max[index]) + "%";
     }
 
-    function dayLowLimit() {
-        if (!Weather.dailyForecast || !Weather.dailyForecast.temperature_2m_min) return 0;
-        let low = 1000;
-        for (let i = 0; i < Weather.dailyForecast.temperature_2m_min.length; i++) {
-            low = Math.min(low, Weather.dailyForecast.temperature_2m_min[i]);
+    // Computed once per forecast refresh instead of rescanning the whole
+    // hourly/daily arrays from every delegate binding.
+    readonly property int _hourStart: {
+        const forecast = Weather.hourlyForecast;
+        if (!forecast || !forecast.time || forecast.time.length === 0) return -1;
+        const now = new Date();
+        for (let i = 0; i < forecast.time.length; i++) {
+            if (new Date(forecast.time[i]) >= now) return i;
         }
+        return 0;
+    }
+    readonly property real _dayLowLimit: {
+        const mins = Weather.dailyForecast ? Weather.dailyForecast.temperature_2m_min : null;
+        if (!mins) return 0;
+        let low = 1000;
+        for (let i = 0; i < mins.length; i++)
+            low = Math.min(low, mins[i]);
         return low;
     }
-
-    function dayHighLimit() {
-        if (!Weather.dailyForecast || !Weather.dailyForecast.temperature_2m_max) return 1;
+    readonly property real _dayHighLimit: {
+        const maxs = Weather.dailyForecast ? Weather.dailyForecast.temperature_2m_max : null;
+        if (!maxs) return 1;
         let high = -1000;
-        for (let i = 0; i < Weather.dailyForecast.temperature_2m_max.length; i++) {
-            high = Math.max(high, Weather.dailyForecast.temperature_2m_max[i]);
-        }
+        for (let i = 0; i < maxs.length; i++)
+            high = Math.max(high, maxs[i]);
         return high;
     }
 
     function hourIndex(offset) {
-        if (!Weather.hourlyForecast || !Weather.hourlyForecast.time) return -1;
-        const now = new Date();
-        let start = 0;
-        for (let i = 0; i < Weather.hourlyForecast.time.length; i++) {
-            if (new Date(Weather.hourlyForecast.time[i]) >= now) {
-                start = i;
-                break;
-            }
-        }
-        return Math.min(start + offset, Weather.hourlyForecast.time.length - 1);
+        if (_hourStart < 0 || !Weather.hourlyForecast || !Weather.hourlyForecast.time) return -1;
+        return Math.min(_hourStart + offset, Weather.hourlyForecast.time.length - 1);
     }
 
     function hourLabel(hourlyIndex, offset) {
@@ -458,8 +460,8 @@ Item {
                         accentColor: root.accent
                         minTemp: root.dailyMin(index)
                         maxTemp: root.dailyMax(index)
-                        lowLimit: root.dayLowLimit()
-                        highLimit: root.dayHighLimit()
+                        lowLimit: root._dayLowLimit
+                        highLimit: root._dayHighLimit
                     }
                 }
             }

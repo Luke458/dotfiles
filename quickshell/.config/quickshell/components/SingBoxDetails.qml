@@ -22,6 +22,17 @@ Item {
     }
     Component.onDestruction: Services.SingBox.endDetails()
 
+    // Routes arrive asynchronously after beginDetails(); re-validate the
+    // selection reactively so it can never stay invalid.
+    Connections {
+        target: Services.SingBox
+        function onRoutesChanged() {
+            if (root.selectedRoute !== "" && Services.SingBox.routes.length > 0
+                    && !root.hasRoute(root.selectedRoute))
+                root.selectedRoute = Services.SingBox.routes[0].name;
+        }
+    }
+
     function hasRoute(name) {
         for (let i = 0; i < Services.SingBox.routes.length; i++) {
             if (Services.SingBox.routes[i].name === name)
@@ -281,7 +292,10 @@ Item {
                     delegate: Rectangle {
                         id: routeCard
                         required property var modelData
-                        width: parent.width
+                        // Guarded: routes are reassigned at runtime, so this
+                        // delegate is recreated while the popup is open and
+                        // `parent` can be null mid-teardown.
+                        width: parent ? parent.width : 0
                         implicitHeight: routeContents.implicitHeight + Theme.sectionPadding * 2
                         color: Theme.surfaceSubtle
                         border.color: Theme.border
@@ -333,7 +347,7 @@ Item {
                                 delegate: Rectangle {
                                     id: entryRow
                                     required property var modelData
-                                    width: parent.width
+                                    width: parent ? parent.width : 0
                                     height: 34
                                     color: Theme.fieldBg
                                     radius: Theme.radiusSmall

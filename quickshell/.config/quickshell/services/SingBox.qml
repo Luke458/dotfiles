@@ -138,7 +138,11 @@ QtObject {
             root.loading = false;
             if (exitCode === 0 && listStdout.text.trim().length > 0) {
                 root.applyPayload(listStdout.text);
-            } else if (exitCode !== 0) {
+            } else if (exitCode === 0) {
+                // An empty "success" must not leave stale routes presented
+                // as fresh data with no error indication.
+                root.errorMessage = "sbr returned no route data";
+            } else {
                 root.errorMessage = listStderr.text.trim() || "Could not read sing-box routes";
             }
 

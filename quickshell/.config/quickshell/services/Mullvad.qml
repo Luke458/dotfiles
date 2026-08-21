@@ -47,6 +47,18 @@ QtObject {
     property var pendingFollowUp: []
     property string lastCommandName: ""
     property string lastCommandError: ""
+    property int detailsConsumers: 0
+
+    function acquireDetails() {
+        detailsConsumers++;
+        refreshSettings();
+        refreshAccount();
+        refreshVersion();
+    }
+
+    function releaseDetails() {
+        detailsConsumers = Math.max(0, detailsConsumers - 1);
+    }
 
     readonly property bool connected: state === "connected"
     readonly property bool connecting: state === "connecting"
@@ -147,28 +159,34 @@ QtObject {
 
     function runCommand(command, name, followUp) {
         if (commandProc.running)
-            return;
+            return false;
 
         lastCommandName = name;
         lastCommandError = "";
         errorMessage = "";
         pendingFollowUp = followUp || [];
         commandProc.exec(command);
+        return true;
     }
 
     function connect() {
+        // Apply optimistic state only when the command was actually accepted;
+        // otherwise a busy command queue would leave a stuck CONNECTING label.
+        if (!runCommand(["mullvad", "connect"], "connect", []))
+            return;
         state = "connecting";
-        runCommand(["mullvad", "connect"], "connect", []);
     }
 
     function disconnect() {
+        if (!runCommand(["mullvad", "disconnect"], "disconnect", []))
+            return;
         state = "disconnecting";
-        runCommand(["mullvad", "disconnect"], "disconnect", []);
     }
 
     function reconnect() {
+        if (!runCommand(["mullvad", "reconnect"], "reconnect", []))
+            return;
         state = "connecting";
-        runCommand(["mullvad", "reconnect"], "reconnect", []);
     }
 
     function toggleConnection() {
@@ -559,7 +577,8 @@ QtObject {
     property Timer settingsTimer: Timer {
         interval: 300000
         repeat: true
-        running: true
+        running: root.detailsConsumers > 0
+        triggeredOnStart: true
         onTriggered: root.refreshSettings()
     }
 
@@ -569,8 +588,19 @@ QtObject {
         onTriggered: root.refreshAll()
     }
 
+    // `status listen` already streams state changes; coalesce the follow-up
+    // detail refresh instead of spawning the full process battery per line.
+    property Timer streamRefreshTimer: Timer {
+        interval: 5000
+        repeat: false
+        onTriggered: root.refreshStatus()
+    }
+
+    // Exponential backoff for relistening while mullvad-daemon is absent;
+    // reset to the floor whenever the stream produces a status line again.
+    property int listenBackoffMs: 3000
+
     property Timer listenRestartTimer: Timer {
-        interval: 3000
         repeat: false
         onTriggered: {
             if (!root.statusListenProc.running)
@@ -583,7 +613,8 @@ QtObject {
         stdout: SplitParser {
             onRead: data => {
                 root.parseStatusText(data);
-                root.refreshAfterCommandTimer.restart();
+                root.listenBackoffMs = 3000;
+                root.streamRefreshTimer.restart();
             }
         }
         stderr: SplitParser {
@@ -596,6 +627,8 @@ QtObject {
             }
         }
         onExited: { // qmllint disable signal-handler-parameters
+            root.listenRestartTimer.interval = root.listenBackoffMs;
+            root.listenBackoffMs = Math.min(root.listenBackoffMs * 2, 60000);
             if (!root.listenRestartTimer.running)
                 root.listenRestartTimer.restart();
         }

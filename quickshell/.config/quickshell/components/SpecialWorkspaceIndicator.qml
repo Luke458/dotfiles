@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Hyprland
+import "../services"
 import "." as Components
 
 MouseArea {
@@ -48,8 +49,9 @@ MouseArea {
         function onRawEvent(event) {
             const name = event.name;
             if (["activespecial", "focusedmon", "workspace", "moveworkspace"].includes(name)) {
-                Hyprland.refreshMonitors();
-                Hyprland.refreshWorkspaces();
+                // Coalesced through the shared service: N screens × M events
+                // collapse into one refresh pair per 150 ms burst.
+                LayoutState.scheduleHyprlandRefresh();
             }
         }
     }

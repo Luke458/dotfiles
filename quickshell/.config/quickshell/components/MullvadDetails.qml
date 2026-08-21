@@ -9,6 +9,9 @@ import "../services"
 Item {
     id: root
 
+    Component.onCompleted: Mullvad.acquireDetails()
+    Component.onDestruction: Mullvad.releaseDetails()
+
     implicitWidth: 480
     implicitHeight: Math.min(640, contentColumn.implicitHeight + 32)
 

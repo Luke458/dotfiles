@@ -399,15 +399,20 @@ Item {
 
                                 Image {
                                     anchors.fill: parent
-                                    source: appButton.modelData.icon
+                                    source: appButton.modelData.icon || ""
                                     fillMode: Image.PreserveAspectFit
                                     smooth: true
+                                    // Android icons are commonly 192-432px;
+                                    // decode small and off the UI thread.
+                                    asynchronous: true
+                                    sourceSize.width: 64
+                                    sourceSize.height: 64
                                     visible: source.toString().length > 0 && status !== Image.Error
                                 }
 
                                 Text {
                                     anchors.centerIn: parent
-                                    visible: appButton.modelData.icon.length === 0
+                                    visible: (appButton.modelData.icon || "").length === 0
                                     text: "\uf17b"
                                     color: Theme.fg
                                     font.family: Theme.fontIcon

@@ -5,6 +5,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../services"
 import "PickerModel.js" as PickerModel
@@ -93,12 +94,45 @@ PanelWindow { // qmllint disable uncreatable-type
         }
     }
 
+    // --- Hidden apps ------------------------------------------------------------
+    // JSON array of lowercase app names or ids in
+    // ~/.config/quickshell/hidden-apps.json, e.g. ["org.gnome.nautilus"].
+    property var hiddenApps: []
+    property FileView hiddenAppsFile: FileView {
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/quickshell/hidden-apps.json"
+        printErrors: false
+        watchChanges: true
+        onLoaded: {
+            try {
+                const parsed = JSON.parse(text());
+                root.hiddenApps = Array.isArray(parsed) ? parsed.map(v => String(v).toLowerCase()) : [];
+            } catch (error) {
+                root.hiddenApps = [];
+            }
+            if (root.mode === "launcher")
+                root.populateApplications();
+        }
+        onFileChanged: reload()
+    }
+
+    function isAppHidden(app) {
+        const id = String(app.id || "").toLowerCase();
+        const name = String(app.name || "").toLowerCase();
+        for (let i = 0; i < hiddenApps.length; i++) {
+            if (hiddenApps[i] === id || hiddenApps[i] === name)
+                return true;
+        }
+        return false;
+    }
+
     function populateApplications() {
         const items = [];
         const apps = DesktopEntries.applications.values;
         if (apps) {
             for (let i = 0; i < apps.length; i++) {
                 const app = apps[i];
+                if (isAppHidden(app))
+                    continue;
                 items.push({
                     name: app.name || "",
                     kind: "app",
@@ -223,6 +257,7 @@ PanelWindow { // qmllint disable uncreatable-type
         const item = currentMatches[index];
         if (item.kind === "app" && item.appObject) {
             const app = item.appObject;
+            beginLaunchWatch(app);
             if (app.runInTerminal && app.command && app.command.length > 0) {
                 const command = terminalCommand.slice();
                 for (let i = 0; i < app.command.length; i++) command.push(app.command[i]);
@@ -298,7 +333,7 @@ PanelWindow { // qmllint disable uncreatable-type
             if (root.mode === "emoji") {
                 root.statusText = items.length > 0 ? "" : "No emojis loaded";
                 root.allItems = items;
-                root.updateFilter(root.searchField.text);
+                root.updateFilter(searchField.text);
             }
         }
     }
@@ -416,8 +451,8 @@ PanelWindow { // qmllint disable uncreatable-type
                     anchors.fill: parent
                     spacing: Theme.space(8)
                     visible: resultItem.glyph !== ""
-                    leftPadding: Theme.space(Theme.controlPadding)
-                    rightPadding: Theme.space(Theme.controlPadding)
+
+                    Item { Layout.preferredWidth: Theme.space(Theme.controlPadding) }
 
                     Text {
                         id: itemGlyph
@@ -436,6 +471,8 @@ PanelWindow { // qmllint disable uncreatable-type
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
                     }
+
+                    Item { Layout.preferredWidth: Theme.space(Theme.controlPadding) }
                 }
                 Text {
                     id: itemText
@@ -469,6 +506,79 @@ PanelWindow { // qmllint disable uncreatable-type
         ready = true;
         pasteProbe.running = true;
         initialize();
+    }
+
+    // --- Launch feedback ----------------------------------------------------------
+    // If a launched app has not produced a toplevel shortly after launch, say
+    // so on the OSD; stop watching once one matching the app id appears.
+    property string launchWatchName: ""
+    property string launchWatchDisplay: ""
+    readonly property bool launchWatching: launchWatchName !== ""
+
+    function beginLaunchWatch(app) {
+        launchWatchDisplay = app.name || app.id || "application";
+        const watchName = String(app.id || app.name || "").toLowerCase();
+        if (!watchName)
+            return;
+        launchWatchName = watchName;
+        launchGraceTimer.restart();
+        launchTimeoutTimer.restart();
+    }
+
+    function finishLaunchWatch() {
+        launchWatchName = "";
+        launchGraceTimer.stop();
+        launchTimeoutTimer.stop();
+    }
+
+    function launchMatchFound() {
+        const tokens = launchWatchName.split(/[ ._-]+/).filter(t => t.length >= 4);
+        if (tokens.length === 0 || !Hyprland.toplevels || !Hyprland.toplevels.values)
+            return false;
+        const list = Hyprland.toplevels.values;
+        for (let i = 0; i < list.length; i++) {
+            const toplevel = list[i];
+            const ipc = toplevel ? (toplevel.lastIpcObject || {}) : {};
+            const candidates = [
+                String(ipc.class || "").toLowerCase(),
+                String(ipc.initialClass || "").toLowerCase(),
+                toplevel && toplevel.wayland ? String(toplevel.wayland.appId || "").toLowerCase() : ""
+            ];
+            for (let c = 0; c < candidates.length; c++) {
+                if (!candidates[c])
+                    continue;
+                for (let t = 0; t < tokens.length; t++) {
+                    if (candidates[c].indexOf(tokens[t]) >= 0)
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    Connections {
+        target: root.launchWatching ? Hyprland.toplevels : null
+        function onValuesChanged() {
+            if (root.launchMatchFound())
+                root.finishLaunchWatch();
+        }
+    }
+
+    Timer {
+        id: launchGraceTimer
+        interval: 2500
+        repeat: false
+        onTriggered: {
+            if (root.launchWatching && !root.launchMatchFound())
+                Osd.showMessage("info", "Launching " + root.launchWatchDisplay + "...", 4000);
+        }
+    }
+
+    Timer {
+        id: launchTimeoutTimer
+        interval: 12000
+        repeat: false
+        onTriggered: root.finishLaunchWatch()
     }
 
     // One-shot probe: typing via ydotool only works while its daemon runs.

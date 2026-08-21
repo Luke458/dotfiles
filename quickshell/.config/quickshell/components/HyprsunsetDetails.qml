@@ -1,6 +1,7 @@
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Layouts
+import "." as Components
 
 Item {
     id: root
@@ -27,10 +28,10 @@ Item {
                 Layout.fillWidth: true
             }
             
-            Switch {
+            Components.StyledSwitch {
                 id: enabledSwitch
                 checked: root.hyprsunset.enabled
-                onToggled: root.hyprsunset.setEnabled(checked)
+                onToggled: root.hyprsunset.setEnabled(!checked)
             }
         }
         
@@ -73,7 +74,7 @@ Item {
                 to: 10000
                 value: root.hyprsunset.temperature
                 stepSize: 100
-                
+
                 background: Rectangle {
                     x: tempSlider.leftPadding
                     y: tempSlider.topPadding + tempSlider.availableHeight / 2 - height / 2
@@ -101,7 +102,7 @@ Item {
                     radius: Theme.radiusHandle
                     color: Theme.selFg
                 }
-                
+
                 // Commit on release: onMoved per step would spawn a hyprctl
                 // process up to ~10x/second during a drag.
                 onPressedChanged: {
@@ -143,7 +144,7 @@ Item {
                 to: 100
                 value: root.hyprsunset.gamma
                 stepSize: 1
-                
+
                 background: Rectangle {
                     x: gammaSlider.leftPadding
                     y: gammaSlider.topPadding + gammaSlider.availableHeight / 2 - height / 2
@@ -171,7 +172,7 @@ Item {
                     radius: Theme.radiusHandle
                     color: Theme.selFg
                 }
-                
+
                 // Commit on release (see temperature slider).
                 onPressedChanged: {
                     if (!pressed)
@@ -180,30 +181,14 @@ Item {
             }
         }
         
-        Button {
+        Components.StyledButton {
             id: resetBtn
-            text: "Reset to Default"
-            flat: true
+            text: "RESET"
+            bordered: true
             Layout.alignment: Qt.AlignHCenter
-            
-            background: Rectangle {
-                implicitWidth: 150
-                implicitHeight: 30
-                radius: Theme.radiusMedium
-                color: resetBtn.hovered ? Theme.hover : Theme.transparent
-            }
-            
             onClicked: {
                 root.hyprsunset.setTemperature(3500);
                 root.hyprsunset.setGamma(100);
-            }
-            contentItem: Text {
-                text: resetBtn.text
-                color: Theme.fg
-                font.pixelSize: Theme.fontSizeSmall
-                font.family: Theme.fontMono
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
             }
         }
     }

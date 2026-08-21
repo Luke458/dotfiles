@@ -33,7 +33,7 @@ Item {
                     width: parent.width
                     text: "MASTER VOLUME"
                     color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeTitle
+                    font.pixelSize: Theme.fontSizeHeadingLarge
                     font.family: Theme.fontMono
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
@@ -63,7 +63,7 @@ Item {
                         from: 0; to: 1
                         value: Volume.volume
                         onMoved: Volume.setVolume(value)
-                        
+
                         background: Rectangle {
                             x: masterSlider.leftPadding
                             y: masterSlider.topPadding + masterSlider.availableHeight / 2 - height / 2

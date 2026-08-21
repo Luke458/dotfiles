@@ -188,114 +188,50 @@ Item {
                 width: parent.width - Theme.panelPadding * 2
                 spacing: Theme.spacingComfortable
 
-                Button {
+                StyledButton {
                     id: containerButton
                     Layout.fillWidth: true
-                    flat: true
                     enabled: Services.Waydroid.available && !Services.Waydroid.busy
+                    bordered: !Services.Waydroid.serviceActive
+                    tint: Services.Waydroid.serviceActive ? Theme.negative : "transparent"
+                    text: Services.Waydroid.serviceActive ? "STOP SERVICE" : "START SERVICE"
                     onClicked: Services.Waydroid.serviceActive
                         ? Services.Waydroid.stopService()
                         : Services.Waydroid.startService()
-
-                    background: Rectangle {
-                        implicitHeight: 36
-                        radius: Theme.radiusMedium
-                        color: containerButton.hovered ? Theme.hover : Theme.transparent
-                        border.color: Services.Waydroid.serviceActive ? Theme.negative : Theme.border
-                        border.width: 1
-                    }
-
-                    contentItem: Text {
-                        text: Services.Waydroid.serviceActive ? "STOP SERVICE" : "START SERVICE"
-                        color: containerButton.hovered ? Theme.selFg : Theme.fg
-                        font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
                 }
 
-                Button {
+                StyledButton {
                     id: sessionButton
                     Layout.fillWidth: true
-                    flat: true
                     enabled: Services.Waydroid.available && !Services.Waydroid.busy
+                    bordered: !Services.Waydroid.sessionRunning
+                    tint: Services.Waydroid.sessionRunning ? Theme.negative : Theme.selBg
+                    text: Services.Waydroid.sessionRunning ? "STOP SESSION" : "START SESSION"
                     onClicked: Services.Waydroid.sessionRunning
                         ? Services.Waydroid.stopSession()
                         : Services.Waydroid.startSession()
-
-                    background: Rectangle {
-                        implicitHeight: 36
-                        radius: Theme.radiusMedium
-                        color: sessionButton.hovered ? Theme.selectionSoft : Theme.transparent
-                        border.color: Services.Waydroid.sessionRunning ? Theme.negative : Theme.selBg
-                        border.width: 1
-                    }
-
-                    contentItem: Text {
-                        text: Services.Waydroid.sessionRunning ? "STOP SESSION" : "START SESSION"
-                        color: sessionButton.hovered ? Theme.selFg : Theme.fg
-                        font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
                 }
 
-                Button {
+                StyledButton {
                     id: fullUiButton
                     Layout.preferredWidth: 86
-                    flat: true
                     enabled: Services.Waydroid.available && !Services.Waydroid.busy
+                    bordered: true
+                    selected: true
+                    text: "FULL UI"
                     onClicked: {
                         Services.Waydroid.showFullUi();
                         root.itemTriggered();
                     }
-
-                    background: Rectangle {
-                        implicitHeight: 36
-                        radius: Theme.radiusMedium
-                        color: fullUiButton.hovered ? Theme.selectionSoft : Theme.selectionSubtle
-                        border.color: Theme.selBg
-                        border.width: 1
-                    }
-
-                    contentItem: Text {
-                        text: "FULL UI"
-                        color: Theme.selFg
-                        font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
                 }
 
-                Button {
+                StyledButton {
                     id: refreshButton
-                    implicitWidth: 38
-                    flat: true
+                    fixedWidth: 38
                     enabled: !Services.Waydroid.loading && !Services.Waydroid.busy
+                    bordered: true
+                    iconText: Services.Waydroid.loading ? "…" : "\uf2f1"
                     onClicked: Services.Waydroid.refresh()
-
-                    background: Rectangle {
-                        implicitHeight: 36
-                        radius: Theme.radiusMedium
-                        color: refreshButton.hovered ? Theme.hover : Theme.transparent
-                        border.color: Theme.border
-                        border.width: 1
-                    }
-
-                    contentItem: Text {
-                        text: Services.Waydroid.loading ? "…" : "\uf2f1"
-                        color: refreshButton.enabled ? Theme.fg : Theme.placeholderFg
-                        font.family: Services.Waydroid.loading ? Theme.fontMono : Theme.fontIcon
-                        font.pixelSize: Theme.fontSizeTitle
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
                 }
             }
 

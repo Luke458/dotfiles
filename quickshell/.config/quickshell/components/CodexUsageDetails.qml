@@ -247,7 +247,7 @@ Item {
 
             Text {
                 text: "TOKEN ACTIVITY"
-                color: Theme.fg
+                color: Theme.selFg
                 font.family: Theme.fontMono
                 font.pixelSize: Theme.fontSizeLabel
                 font.bold: true

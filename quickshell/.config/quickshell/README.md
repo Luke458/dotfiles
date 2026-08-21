@@ -65,6 +65,43 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 - `scripts/install-pinentry-plugin` installs both the module and `pinentry-quickshell` under `~/.local` by default. The configured GPG agent helper path is `~/.local/bin/pinentry-quickshell`; reload it with `gpgconf --reload gpg-agent` after installation.
 - `scripts/qs` launches `~/.local/bin/quickshell`, matching the Hyprland startup configuration. Set `QUICKSHELL_BIN` to use a different Quickshell installation.
 
+## Theming
+
+All colors, fonts, spacing, radii, and opacity roles are tokens on the `Theme`
+singleton; the defaults reproduce the stock DWM-inspired look exactly. A JSON
+file can override any token by name:
+
+- Path: `$QS_THEME_FILE`, otherwise `theme.json` next to `shell.qml`.
+- Values: numbers assign directly (`"fontSizeBar": 13`); strings that look like
+  colors parse as colors (`"#005577"`, `"rgba(255,0,0,0.5)"`); other strings
+  assign verbatim (font families).
+- Derived tokens (`selection*`, `placeholderFg`, `positiveSurface`) follow their
+  base token automatically; overriding `selBg` recolors every selection surface.
+- The file is watched: edits apply live without a reload.
+
+Example:
+
+```json
+{ "selBg": "#7c3aed", "bgSolid": "#181820", "fontMono": "JetBrainsMono Nerd Font Mono" }
+```
+
+## Extras
+
+- **OSD** — progress/message feedback overlay on the focused monitor. Wired to
+  volume changes; scriptable via IPC (see below).
+- **Emoji picker** — `qs ipc call shell openPicker emoji '{}'`. Copies to
+  clipboard; with `ydotoold` running it also types the glyph into the
+  previously focused window. Data: `assets/emojis.json`.
+- **Network panel** — bar indicator + flyout over Quickshell's NetworkManager
+  service: wifi toggle, scan list, open/saved/passphrase connect, disconnect,
+  wired status. Scanner runs only while the flyout is open.
+- **Stranded-lock recovery** — at startup the shell re-acquires a session lock
+  if the compositor reports one active but no locker owns it (previous locker
+  crashed). `scripts/restart-shell` refuses to restart while locked.
+- **Hidden launcher apps** — list lowercase app names or ids in
+  `~/.config/quickshell/hidden-apps.json` (JSON array) to exclude them from the
+  launcher. Watched live.
+
 ## Development Guidelines
 
 - Keep UI components in `components/`, shell windows in `windows/`, and long-lived state/integrations in `services/`.
@@ -82,6 +119,15 @@ scripts/qs log --tail 200
 scripts/qs -p launcher.qml
 scripts/qs -p pass.qml
 scripts/qs -p power.qml
+
+# OSD (progress or message; auto-hides)
+scripts/qs ipc call osd -- show '{"icon":"volume","value":42,"max":100}'
+scripts/qs ipc call osd -- show '{"icon":"info","message":"Hello"}'
+scripts/qs ipc call osd state
+
+# Pickers
+scripts/qs ipc call shell openPicker emoji '{}'
+scripts/qs ipc call shell openPicker launcher '{}'
 
 # Install the helper used by gpg-agent and the QML module under ~/.local.
 scripts/install-pinentry-plugin

@@ -20,4 +20,4 @@ singleton PodmanQuadlets PodmanQuadlets.qml
 singleton SingBox SingBox.qml
 singleton Waydroid Waydroid.qml
 singleton Osd Osd.qml
-singleton Network Network.qml
+singleton NetworkService Network.qml

@@ -123,78 +123,31 @@ Item {
                 width: parent.width - 32
                 spacing: Theme.spacingComfortable
 
-                Button {
+                StyledButton {
                     id: connectBtn
                     Layout.fillWidth: true
-                    flat: true
                     enabled: !Mullvad.commandRunning
+                    tint: root.statusColor()
+                    text: Mullvad.connected || Mullvad.connecting ? "DISCONNECT" : "CONNECT"
                     onClicked: Mullvad.toggleConnection()
-
-                    background: Rectangle {
-                        implicitHeight: 36
-                        radius: Theme.radiusMedium
-                        color: connectBtn.hovered ? Theme.withAlpha(root.statusColor(), 0.22) : Theme.withAlpha(root.statusColor(), 0.12)
-                        border.color: root.statusColor()
-                        border.width: 1
-                    }
-
-                    contentItem: Text {
-                        text: Mullvad.connected || Mullvad.connecting ? "DISCONNECT" : "CONNECT"
-                        color: Theme.selFg
-                        font.pixelSize: Theme.fontSizeLabel
-                        font.family: Theme.fontMono
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
                 }
 
-                Button {
+                StyledButton {
                     id: reconnectBtn
                     Layout.fillWidth: true
-                    flat: true
                     enabled: !Mullvad.commandRunning
+                    bordered: true
+                    text: "RECONNECT"
                     onClicked: Mullvad.reconnect()
-
-                    background: Rectangle {
-                        implicitHeight: 36
-                        radius: Theme.radiusMedium
-                        color: reconnectBtn.hovered ? Theme.hover : Theme.transparent
-                        border.color: Theme.border
-                        border.width: 1
-                    }
-
-                    contentItem: Text {
-                        text: "RECONNECT"
-                        color: reconnectBtn.hovered ? Theme.selFg : Theme.fg
-                        font.pixelSize: Theme.fontSizeLabel
-                        font.family: Theme.fontMono
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
                 }
 
-                Button {
+                StyledButton {
                     id: refreshBtn
-                    implicitWidth: 38
-                    flat: true
+                    fixedWidth: 38
                     enabled: !Mullvad.commandRunning
+                    bordered: true
+                    iconText: "\uf2f1"
                     onClicked: Mullvad.refreshAll()
-
-                    background: Rectangle {
-                        implicitHeight: 36
-                        radius: Theme.radiusMedium
-                        color: refreshBtn.hovered ? Theme.hover : Theme.transparent
-                        border.color: Theme.border
-                        border.width: 1
-                    }
-
-                    contentItem: IconImage {
-                        source: "image://icon/view-refresh"
-                        width: 17
-                        height: 17
-                    }
                 }
             }
 
@@ -356,10 +309,10 @@ Item {
                             Layout.fillWidth: true
                         }
 
-                        Switch {
+                        StyledSwitch {
                             checked: connectionSetting.modelData.checked
-                            enabled: !Mullvad.commandRunning
-                            onToggled: connectionSetting.modelData.action(checked)
+                            busy: Mullvad.commandRunning
+                            onToggled: connectionSetting.modelData.action(!checked)
                         }
                     }
                 }

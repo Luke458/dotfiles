@@ -101,7 +101,7 @@ Item {
 
             Text {
                 text: "STOPWATCH"
-                color: Theme.fg
+                color: Theme.selFg
                 font.pixelSize: Theme.fontSizeLabel
                 font.family: Theme.fontMono
                 font.bold: true
@@ -144,7 +144,7 @@ Item {
 
             Text {
                 text: "COUNTDOWN"
-                color: Theme.fg
+                color: Theme.selFg
                 font.pixelSize: Theme.fontSizeLabel
                 font.family: Theme.fontMono
                 font.bold: true
@@ -198,7 +198,7 @@ Item {
 
             Text {
                 text: "SYSTEM UPTIME"
-                color: Theme.fg
+                color: Theme.selFg
                 font.pixelSize: Theme.fontSizeLabel
                 font.family: Theme.fontMono
                 font.bold: true

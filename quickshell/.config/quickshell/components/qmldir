@@ -51,3 +51,7 @@ Workspaces Workspaces.qml
 OsdOverlay OsdOverlay.qml
 NetworkIndicator NetworkIndicator.qml
 NetworkDetails NetworkDetails.qml
+StyledSwitch StyledSwitch.qml
+StyledButton StyledButton.qml
+SectionHeading SectionHeading.qml
+Divider Divider.qml

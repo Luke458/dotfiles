@@ -149,7 +149,7 @@ Item {
                     value: (Media.trackLength > 0) ? (Media.currentPosition * 1e6 / Media.trackLength) : 0
                     when: !progressSlider.pressed
                 }
-                
+
                 background: Rectangle {
                     x: progressSlider.leftPadding
                     y: progressSlider.topPadding + progressSlider.availableHeight / 2 - height / 2
@@ -178,7 +178,7 @@ Item {
                     color: Theme.selFg
                     visible: progressSlider.hovered || progressSlider.pressed
                 }
-                
+
                 property real seekPreview: 0
                 onMoved: seekPreview = value
 
@@ -213,64 +213,29 @@ Item {
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacingHero
-            
-            Button {
+
+            StyledButton {
                 id: prevBtn
-                flat: true
+                fixedWidth: 40
                 enabled: Media.canGoPrevious
+                iconText: "\uf04a"
                 onClicked: Media.previous()
-                
-                background: Rectangle {
-                    implicitWidth: 40
-                    implicitHeight: 40
-                    radius: Theme.radiusMedium
-                    color: prevBtn.hovered ? Theme.hover : Theme.transparent
-                }
-                
-                contentItem: IconImage {
-                    source: "image://icon/media-skip-backward"
-                    Layout.preferredWidth: 24
-                    Layout.preferredHeight: 24
-                }
             }
-            
-            Button {
+
+            StyledButton {
                 id: playBtn
-                flat: true
+                fixedWidth: 48
+                selected: Media.playbackState === 1
+                iconText: Media.playbackState === 1 ? "\uf04c" : "\uf04b"
                 onClicked: Media.togglePlayPause()
-                
-                background: Rectangle {
-                    implicitWidth: 50
-                    implicitHeight: 50
-                    radius: Theme.radiusMedium
-                    color: playBtn.hovered ? Theme.hover : Theme.transparent
-                }
-                
-                contentItem: IconImage {
-                    source: Media.playbackState === 1 ? "image://icon/media-playback-pause" : "image://icon/media-playback-start"
-                    Layout.preferredWidth: 32
-                    Layout.preferredHeight: 32
-                }
             }
-            
-            Button {
+
+            StyledButton {
                 id: nextBtn
-                flat: true
+                fixedWidth: 40
                 enabled: Media.canGoNext
+                iconText: "\uf051"
                 onClicked: Media.next()
-                
-                background: Rectangle {
-                    implicitWidth: 40
-                    implicitHeight: 40
-                    radius: Theme.radiusMedium
-                    color: nextBtn.hovered ? Theme.hover : Theme.transparent
-                }
-                
-                contentItem: IconImage {
-                    source: "image://icon/media-skip-forward"
-                    Layout.preferredWidth: 24
-                    Layout.preferredHeight: 24
-                }
             }
         }
     }

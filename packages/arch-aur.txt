@@ -2,6 +2,7 @@ hyprqt6engine
 instaloader
 libstrangle
 llama.cpp-git
+opencode-bin
 qml-language-server-bin
 quickshell-local-git
 ripdrag-git

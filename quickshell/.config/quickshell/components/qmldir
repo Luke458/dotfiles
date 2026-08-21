@@ -48,3 +48,6 @@ CalendarDetails CalendarDetails.qml
 DiskDetails DiskDetails.qml
 WindowTitle WindowTitle.qml
 Workspaces Workspaces.qml
+OsdOverlay OsdOverlay.qml
+NetworkIndicator NetworkIndicator.qml
+NetworkDetails NetworkDetails.qml

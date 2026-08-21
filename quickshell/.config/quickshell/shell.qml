@@ -102,6 +102,22 @@ ShellRoot {
         }
     }
 
+    IpcHandler {
+        target: "osd"
+
+        function show(payloadJson: string): string {
+            return Osd.show(payloadJson);
+        }
+
+        function close(): void {
+            Osd.close();
+        }
+
+        function state(): string {
+            return Osd.statusJson();
+        }
+    }
+
     Process {
         id: inhibitorProc
         command: ["systemd-inhibit", "--what=idle", "--why=Quickshell Toggle", "--mode=block", "sleep", "infinity"]
@@ -164,6 +180,15 @@ ShellRoot {
     Instantiator {
         model: Quickshell.screens
         delegate: Components.PinentryOverlay {
+            required property var modelData
+            screen: modelData
+            activeMonitor: Hyprland.focusedMonitor && modelData.name === Hyprland.focusedMonitor.name
+        }
+    }
+
+    Instantiator {
+        model: Quickshell.screens
+        delegate: Components.OsdOverlay {
             required property var modelData
             screen: modelData
             activeMonitor: Hyprland.focusedMonitor && modelData.name === Hyprland.focusedMonitor.name

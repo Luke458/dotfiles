@@ -1,6 +1,7 @@
 pragma Singleton
 
 import QtQuick
+import Quickshell.Io
 import Quickshell.Services.Pam
 
 QtObject {
@@ -108,5 +109,35 @@ QtObject {
         }
 
         onCompleted: result => root.finishAuthentication(result === PamResult.Success)
+    }
+
+    // --- Stranded-lock recovery -------------------------------------------------
+    // An ext-session-lock outlives its client: if the compositor still reports
+    // an active session lock but this shell holds none (the previous locker
+    // crashed or was killed), re-acquire the lock so the unlock surface is
+    // available instead of sitting behind the compositor's failsafe.
+    function recoverStrandedLock() {
+        if (sessionLocked || secure || requested || pending)
+            return;
+        console.warn("Lock: session is locked but no locker owns it; re-acquiring");
+        requested = true;
+    }
+
+    property Process strandedLockCheck: Process {
+        command: ["sh", "-c",
+            "hyprctl -j monitors 2>/dev/null | jq -r 'if any(.[]; (.solitaryBlockedBy // []) | index(\"LOCK\")) then \"locked\" else \"unlocked\" end'"]
+        stdout: SplitParser {
+            onRead: data => {
+                if (data.trim() === "locked")
+                    root.recoverStrandedLock();
+            }
+        }
+    }
+
+    property Timer strandedCheckTimer: Timer {
+        interval: 1500
+        running: true
+        repeat: false
+        onTriggered: root.strandedLockCheck.running = true
     }
 }

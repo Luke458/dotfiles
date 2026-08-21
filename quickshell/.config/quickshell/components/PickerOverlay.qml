@@ -28,9 +28,11 @@ PanelWindow { // qmllint disable uncreatable-type
         if (mode === "pass") return "Pass:";
         if (mode === "power") return "Power:";
         if (mode === "menu") return "Select:";
+        if (mode === "emoji") return "Emoji:";
         return "Run:";
     }
     readonly property var terminalCommand: ["kitty", "-e"]
+    property bool pasteAvailable: false
 
     signal requestClose(string reason)
 
@@ -167,8 +169,51 @@ PanelWindow { // qmllint disable uncreatable-type
         currentMatches = PickerModel.filter(allItems, text, 100);
         resultsModel.clear();
         for (let i = 0; i < currentMatches.length; i++)
-            resultsModel.append({ name: currentMatches[i].name || "" });
+            resultsModel.append({ name: currentMatches[i].name || "", glyph: currentMatches[i].glyph || "" });
         resultsList.currentIndex = resultsModel.count > 0 ? 0 : -1;
+    }
+
+    // Copy the glyph to the clipboard; when ydotoold is running, type it into
+    // the previously focused window instead of requiring a manual paste.
+    property Process emojiCopyProcess: Process {
+        stdout: StdioCollector {}
+        stderr: StdioCollector {}
+    }
+
+    property Timer emojiPasteTimer: Timer {
+        interval: 250
+        repeat: false
+        onTriggered: {
+            // The picker has closed by now, so typed keys land in the
+            // previously focused window.
+            root.emojiPasteProcess.command = ["ydotool", "type", root.pasteGlyph];
+            root.emojiPasteProcess.running = true;
+        }
+    }
+
+    property Process emojiPasteProcess: Process {
+        stdout: StdioCollector {
+            onStreamFinished: Osd.showMessage("check", "Inserted " + root.pasteGlyph)
+        }
+        stderr: StdioCollector {
+            onStreamFinished: Osd.showMessage("copy", "Copied " + root.pasteGlyph)
+        }
+    }
+
+    property string pasteGlyph: ""
+
+    function copyEmoji(glyph) {
+        if (!glyph)
+            return;
+        pasteGlyph = glyph;
+        emojiCopyProcess.command = ["sh", "-c", "printf %s \"$1\" | wl-copy", "emoji-copy", glyph];
+        emojiCopyProcess.running = true;
+        requestClose("emoji-selected");
+        if (pasteAvailable) {
+            emojiPasteTimer.restart();
+        } else {
+            Osd.showMessage("copy", "Copied " + glyph);
+        }
     }
 
     function selectItem(index) {
@@ -192,6 +237,8 @@ PanelWindow { // qmllint disable uncreatable-type
                 command: ["pass", "-c", item.name],
                 environment: ({ PASSWORD_STORE_DIR: passwordStoreDir })
             });
+        } else if (item.kind === "emoji") {
+            copyEmoji(item.glyph || item.name);
         } else if (item.kind === "power") {
             requestClose("power-selected");
             if (item.name === "lock")
@@ -205,6 +252,54 @@ PanelWindow { // qmllint disable uncreatable-type
         } else {
             print("SELECTED: " + item.name);
             requestClose("menu-selected");
+        }
+    }
+
+    function populateEmoji() {
+        if (emojiItems.length === 0) {
+            statusText = "Loading emojis...";
+            emojiFile.reload();
+            return;
+        }
+        allItems = emojiItems;
+        statusText = "";
+        updateFilter(searchField.text);
+    }
+
+    // Emojis come from a bundled Unicode keyword list: [{e, k}, ...].
+    property var emojiItems: []
+    property FileView emojiFile: FileView {
+        path: Quickshell.shellPath("assets/emojis.json")
+        printErrors: false
+        onLoaded: {
+            const items = [];
+            try {
+                const parsed = JSON.parse(text());
+                if (Array.isArray(parsed)) {
+                    for (let i = 0; i < parsed.length; i++) {
+                        const entry = parsed[i];
+                        if (!entry || !entry.e || !entry.k) continue;
+                        const words = String(entry.k).trim().split(/\s+/);
+                        items.push({
+                            // Label shows the leading keywords; the full
+                            // keyword string stays searchable via genericName.
+                            name: words.slice(0, 4).join(" "),
+                            genericName: words.join(" "),
+                            metadata: "",
+                            kind: "emoji",
+                            glyph: entry.e
+                        });
+                    }
+                }
+            } catch (error) {
+                console.warn("PickerOverlay: invalid emoji data: " + error);
+            }
+            root.emojiItems = items;
+            if (root.mode === "emoji") {
+                root.statusText = items.length > 0 ? "" : "No emojis loaded";
+                root.allItems = items;
+                root.updateFilter(root.searchField.text);
+            }
         }
     }
 
@@ -224,6 +319,8 @@ PanelWindow { // qmllint disable uncreatable-type
             populatePower();
         } else if (mode === "menu") {
             populateMenu();
+        } else if (mode === "emoji") {
+            populateEmoji();
         } else {
             populateApplications();
         }
@@ -306,14 +403,43 @@ PanelWindow { // qmllint disable uncreatable-type
                 id: resultItem
                 required property int index
                 required property string name
-                width: Math.min(itemText.implicitWidth + Theme.space(20), Theme.space(340))
+                required property string glyph
+                width: glyph !== ""
+                    ? Math.min(itemGlyph.implicitWidth + labelText.implicitWidth + Theme.space(24), Theme.space(340))
+                    : Math.min(itemText.implicitWidth + Theme.space(20), Theme.space(340))
                 height: root.implicitHeight
                 Rectangle {
                     anchors.fill: parent
                     color: Theme.controlFill(false, itemTap.hovered, resultsList.currentIndex === resultItem.index)
                 }
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: Theme.space(8)
+                    visible: resultItem.glyph !== ""
+                    leftPadding: Theme.space(Theme.controlPadding)
+                    rightPadding: Theme.space(Theme.controlPadding)
+
+                    Text {
+                        id: itemGlyph
+                        text: resultItem.glyph
+                        font.pixelSize: Theme.fontSizeHeadingLarge
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    Text {
+                        id: labelText
+                        text: resultItem.name
+                        color: Theme.controlText(false, itemTap.hovered, resultsList.currentIndex === resultItem.index, true)
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.family: Theme.fontMono
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                }
                 Text {
                     id: itemText
+                    visible: resultItem.glyph === ""
                     anchors.fill: parent
                     leftPadding: Theme.space(Theme.controlPadding)
                     rightPadding: Theme.space(Theme.controlPadding)
@@ -341,8 +467,18 @@ PanelWindow { // qmllint disable uncreatable-type
 
     Component.onCompleted: {
         ready = true;
+        pasteProbe.running = true;
         initialize();
     }
+
+    // One-shot probe: typing via ydotool only works while its daemon runs.
+    property Process pasteProbe: Process {
+        command: ["sh", "-c", "pgrep -x ydotoold >/dev/null 2>&1 && echo yes"]
+        stdout: StdioCollector {
+            onStreamFinished: root.pasteAvailable = text.trim() === "yes"
+        }
+    }
+
     Component.onDestruction: {
         allItems = [];
         currentMatches = [];

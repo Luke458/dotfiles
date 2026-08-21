@@ -58,16 +58,20 @@ QtObject {
     }
 
     // --- Control Functions ---
-    function toggleMute() { 
-        if (audioSink && audioSink.audio && audioSink.ready) 
-            audioSink.audio.muted = !audioSink.audio.muted; 
+    function toggleMute() {
+        if (audioSink && audioSink.audio && audioSink.ready) {
+            audioSink.audio.muted = !audioSink.audio.muted;
+            Osd.showMessage(audioSink.audio.muted ? "volume-mute" : "volume", audioSink.audio.muted ? "Muted" : getNodeName(audioSink));
+        }
     }
 
-    function setVolume(val) { 
-        if (audioSink && audioSink.audio && audioSink.ready) { 
-            audioSink.audio.muted = false; 
-            audioSink.audio.volume = Math.max(0, Math.min(1, val)); 
-        } 
+    function setVolume(val) {
+        if (audioSink && audioSink.audio && audioSink.ready) {
+            const next = Math.max(0, Math.min(1, val));
+            audioSink.audio.muted = false;
+            audioSink.audio.volume = next;
+            Osd.showProgress("volume", Math.round(next * 100), 100);
+        }
     }
 
     function changeVolume(delta) { 

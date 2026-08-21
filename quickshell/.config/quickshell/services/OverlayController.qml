@@ -17,7 +17,8 @@ QtObject {
         launcher: true,
         pass: true,
         power: true,
-        menu: true
+        menu: true,
+        emoji: true
     })
 
     function focusedScreenName() {

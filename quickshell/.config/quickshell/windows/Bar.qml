@@ -15,8 +15,8 @@ PanelWindow { // qmllint disable uncreatable-type
     property bool leftSectionExpanded: false
     property bool focused: screen && Hyprland.focusedMonitor && screen.name === Hyprland.focusedMonitor.name
     property bool isHidden: OverlayController.opened && OverlayController.targetScreenName === (screen ? screen.name : "")
-    property list<Component> expandableModules: [trayModule, mediaModule, sunsetModule, idleModule, mullvadModule, singBoxModule, podmanModule, waydroidModule, networkModule]
-    property list<Component> primaryModules: [attackSharkModule, codexModule, btcModule, weatherModule, volumeModule, cpuModule, gpuModule, memoryModule, diskModule, dateModule, clockModule, notificationModule, powerModule]
+    property list<Component> expandableModules: [trayModule, mediaModule, sunsetModule, idleModule, mullvadModule, singBoxModule, podmanModule, waydroidModule]
+    property list<Component> primaryModules: [attackSharkModule, codexModule, btcModule, weatherModule, volumeModule, cpuModule, gpuModule, memoryModule, diskModule, dateModule, clockModule, networkModule, notificationModule, powerModule]
 
     signal toggleInhibitor
     signal toggleLeftSection

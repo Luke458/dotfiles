@@ -77,15 +77,38 @@ PanelWindow { // qmllint disable uncreatable-type
     component ModuleRun: Row {
         id: moduleRun
         required property var modules
+        // Bumped whenever any module's visibility changes so preceding
+        // separators re-evaluate against the final layout.
+        property int visibilityRevision: 0
         spacing: Components.Theme.spacingSmall
         height: 24
 
         Repeater {
+            id: moduleRepeater
             model: moduleRun.modules
             delegate: Row {
                 id: moduleEntry
                 required property int index
                 required property var modelData
+                // Modules may hide themselves (media with no player, empty
+                // tray); the whole slot must then collapse so no invisible
+                // gap or orphan separator is left behind. Positioners skip
+                // non-visible children.
+                readonly property bool moduleVisible: moduleLoader.status !== Loader.Null
+                    && moduleLoader.item !== null
+                    && moduleLoader.item.visible !== false // qmllint disable missing-property
+                readonly property bool laterVisibleExists: {
+                    void moduleRun.visibilityRevision;
+                    for (let i = moduleEntry.index + 1; i < moduleRun.modules.length; i++) {
+                        const sibling = moduleRepeater.itemAt(i);
+                        if (sibling && sibling.moduleVisible) // qmllint disable missing-property
+                            return true;
+                    }
+                    return false;
+                }
+                onModuleVisibleChanged: moduleRun.visibilityRevision++
+
+                visible: moduleEntry.moduleVisible
                 height: 24
                 spacing: Components.Theme.spacingSmall
 
@@ -96,7 +119,7 @@ PanelWindow { // qmllint disable uncreatable-type
                 }
 
                 Components.Separator {
-                    visible: moduleEntry.index < moduleRun.modules.length - 1
+                    visible: moduleEntry.moduleVisible && moduleEntry.laterVisibleExists
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }

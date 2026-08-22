@@ -7,7 +7,9 @@ import Quickshell.Services.SystemTray
 
 Item {
     id: trayRoot
-    visible: itemCount > 0
+    // Slot contract with windows/Bar.qml ModuleRun (see Media.qml).
+    readonly property bool moduleActive: itemCount > 0
+    visible: moduleActive
     implicitWidth: itemCount > 0 ? (itemCount * iconSize) + ((itemCount - 1) * iconSpacing) : 0
     implicitHeight: iconSize
     Layout.preferredWidth: implicitWidth

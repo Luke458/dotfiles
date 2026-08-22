@@ -5,6 +5,10 @@ import "../services"
 
 MouseArea {
     id: root
+    // Slot contract with windows/Bar.qml ModuleRun: the bar collapses the
+    // whole module (including its separator) while this is false. Declared
+    // separately from `visible` so the slot never reads item visibility.
+    readonly property bool moduleActive: Media.hasMedia
     implicitWidth: layout.implicitWidth
     implicitHeight: layout.implicitHeight
     

@@ -90,13 +90,14 @@ PanelWindow { // qmllint disable uncreatable-type
                 id: moduleEntry
                 required property int index
                 required property var modelData
-                // Modules may hide themselves (media with no player, empty
-                // tray); the whole slot must then collapse so no invisible
-                // gap or orphan separator is left behind. Positioners skip
-                // non-visible children.
+                // Modules that want to hide declare `moduleActive` on their
+                // root (e.g. media with no player, empty tray). We must NOT
+                    // read `item.visible`: the slot's own visibility feeds
+                // back into loaded items on this Qt version, which would
+                // lock every module invisible.
                 readonly property bool moduleVisible: moduleLoader.status !== Loader.Null
                     && moduleLoader.item !== null
-                    && moduleLoader.item.visible !== false // qmllint disable missing-property
+                    && moduleLoader.item.moduleActive !== false // qmllint disable missing-property
                 readonly property bool laterVisibleExists: {
                     void moduleRun.visibilityRevision;
                     for (let i = moduleEntry.index + 1; i < moduleRun.modules.length; i++) {
@@ -106,6 +107,7 @@ PanelWindow { // qmllint disable uncreatable-type
                     }
                     return false;
                 }
+
                 onModuleVisibleChanged: moduleRun.visibilityRevision++
 
                 visible: moduleEntry.moduleVisible
@@ -135,7 +137,6 @@ PanelWindow { // qmllint disable uncreatable-type
         id: mediaModule
         Components.Media {
             id: item
-            visible: Media.hasMedia
             onItemTriggered: window.toggleFlyout("MediaDetails.qml", item)
         }
     }

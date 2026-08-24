@@ -238,7 +238,6 @@ uwsm
 ventoy-bin
 vesktop
 vim
-vlc-plugins-all
 vulkan-icd-loader
 vulkan-mesa-implicit-layers
 vulkan-mesa-layers

@@ -99,6 +99,7 @@ inetutils
 iptables
 iwd
 jfsutils
+jujutsu
 just
 kitty
 lact

@@ -8,5 +8,6 @@ quickshell-local-git
 ripdrag-git
 sing-box-bin
 spotify
+walgit-git
 xdg-desktop-portal-termfilechooser-hunkyburrito-git
 xdg-ninja-git

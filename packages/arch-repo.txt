@@ -26,7 +26,6 @@ cachyos-kernel-manager
 cachyos-keyring
 cachyos-mirrorlist
 cachyos-packageinstaller
-cachyos-plymouth-bootanimation
 cachyos-rate-mirrors
 cachyos-settings
 cachyos-snapper-support
@@ -172,7 +171,6 @@ pipewire-pulse
 pkgfile
 playerctl
 plocate
-plymouth
 pnpm
 podlet
 podman

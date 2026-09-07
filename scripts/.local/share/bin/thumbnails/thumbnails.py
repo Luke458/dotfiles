@@ -569,7 +569,11 @@ def discover_videos(roots: list[Path], recursive: bool, output_name: str) -> lis
     for root in roots:
         if recursive:
             for directory, directory_names, file_names in os.walk(root):
-                directory_names[:] = [name for name in directory_names if name != output_name]
+                directory_names[:] = [
+                    name
+                    for name in directory_names
+                    if name != output_name and not name.startswith(".")
+                ]
                 folder = Path(directory)
                 videos.update(
                     folder / name
@@ -593,6 +597,11 @@ def discover_output_directories(roots: list[Path], recursive: bool, output_name:
         if not recursive:
             continue
         for directory, directory_names, _file_names in os.walk(root):
+            directory_names[:] = [
+                name
+                for name in directory_names
+                if name != output_name and not name.startswith(".")
+            ]
             if output_name in directory_names:
                 directories.add(Path(directory) / output_name)
                 directory_names.remove(output_name)
@@ -943,6 +952,20 @@ figcaption { overflow-wrap: anywhere; padding-top: 7px; text-align: center; }
 .video-name { font-size: .9rem; }
 .video-meta { margin-top: 3px; color: #aaa; font-size: .76rem; }
 .repair-badge { color: #f4bf75; }
+.field--check { display: flex; align-items: center; gap: 6px; padding: 0 8px; }
+.field--check input { accent-color: #65a30d; width: 15px; height: 15px; }
+.field--check label { cursor: pointer; user-select: none; }
+#modeBtn { min-width: 170px; text-align: left; }
+#flatGrid { display: none; margin: 24px 0; }
+body.flat section { display: none !important; }
+body.flat #flatGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--card-width)), 1fr)); gap: 20px; }
+#lightbox { position: fixed; inset: 0; z-index: 50; background: #05070af2; display: flex; flex-direction: column; }
+#lightbox[hidden] { display: none !important; }
+#lbBar { display: flex; align-items: center; gap: 8px; flex: none; padding: 8px 14px;
+          background: #111; border-bottom: 1px solid #333; }
+#lbTitle { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .9rem; }
+#lbCount { color: #aaa; font-size: .8rem; }
+#lbVideo { flex: 1; width: 100%; background: #000; align-items: center; }
 [hidden] { display: none !important; }
 @media (max-width: 700px) {
   body { padding-right: 12px; padding-left: 12px; }
@@ -955,12 +978,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileMode = location.protocol === 'file:';
   const figures = [...document.querySelectorAll('figure')];
   const sections = [...document.querySelectorAll('section')];
+  const flatGrid = document.querySelector('#flatGrid');
+  const lightbox = document.createElement('div');
+  lightbox.id = 'lightbox';
+  lightbox.hidden = true;
+  lightbox.innerHTML = '<div id="lbBar"><button id="lbPrev" type="button" title="Previous (←)">‹</button>' +
+    '<span id="lbTitle"></span><span id="lbCount"></span>' +
+    '<button id="lbNext" type="button" title="Next (→)">›</button>' +
+    '<button id="lbClose" type="button" title="Close (Esc)">✕</button></div>' +
+    '<video id="lbVideo" controls playsinline></video>';
+  document.body.append(lightbox);
+  const lbVideo = lightbox.querySelector('#lbVideo');
+  const lbTitle = lightbox.querySelector('#lbTitle');
+  const lbCount = lightbox.querySelector('#lbCount');
   const controls = {
     filter: document.querySelector('#filter'),
     sort: document.querySelector('#sort'),
     codec: document.querySelector('#codec'),
     resolution: document.querySelector('#resolution'),
-    repair: document.querySelector('#repair')
+    repair: document.querySelector('#repair'),
+    duration: document.querySelector('#duration'),
+    folder: document.querySelector('#folder'),
+    flat: document.querySelector('#flat')
   };
   const stats = document.querySelector('#stats');
 
@@ -972,6 +1011,25 @@ document.addEventListener('DOMContentLoaded', () => {
     option.textContent = codec.toUpperCase();
     controls.codec.append(option);
   }
+  const folders = [...new Set(sections.map(section => section.dataset.folder))].sort((a, b) => a.localeCompare(b));
+  for (const folder of folders) {
+    const option = document.createElement('option');
+    option.value = folder;
+    option.textContent = folder === '.' ? '(top level)' : folder.split('/').pop();
+    option.title = folder;
+    controls.folder.append(option);
+  }
+
+  let openMode = 'page';
+  const modeBtn = document.querySelector('#modeBtn');
+  const updateModeBtn = () => {
+    modeBtn.textContent = openMode === 'page' ? 'Open: in-page player' : 'Open: system player (xdg)';
+  };
+  modeBtn.addEventListener('click', () => {
+    openMode = openMode === 'page' ? 'system' : 'page';
+    try { localStorage.setItem('thumbnail-gallery-open-mode', openMode); } catch (_) {}
+    updateModeBtn();
+  });
 
   try {
     const saved = JSON.parse(localStorage.getItem('thumbnail-gallery-controls') || '{}');
@@ -980,7 +1038,24 @@ document.addEventListener('DOMContentLoaded', () => {
         controls[name].value = value;
       }
     }
+    saved.filter && (controls.filter.value = saved.filter);
+    saved.flat && (controls.flat.checked = saved.flat === 'true');
+    const savedMode = localStorage.getItem('thumbnail-gallery-open-mode');
+    if (savedMode === 'page' || savedMode === 'system') openMode = savedMode;
   } catch (_) {}
+  updateModeBtn();
+
+  const params = new URLSearchParams(location.search);
+  if (params.get('q')) controls.filter.value = params.get('q');
+
+  const durationMatches = (seconds, selected) => {
+    if (!selected) return true;
+    if (selected === 'lt5') return seconds < 300;
+    if (selected === '5-15') return seconds >= 300 && seconds < 900;
+    if (selected === '15-30') return seconds >= 900 && seconds < 1800;
+    if (selected === '30-60') return seconds >= 1800 && seconds < 3600;
+    return seconds >= 3600;
+  };
 
   const resolutionMatches = (height, selected) => {
     if (selected === 'all') return true;
@@ -1005,24 +1080,99 @@ document.addEventListener('DOMContentLoaded', () => {
     'resolution-asc': (a, b) => Number(a.dataset.pixels) - Number(b.dataset.pixels)
   };
 
+  const formatBytes = value => {
+    for (const [unit, factor] of [['TiB', 1e12], ['GiB', 1e9], ['MiB', 1e6]]) {
+      if (value >= factor) return `${(value / factor).toFixed(1)} ${unit}`;
+    }
+    return `${value} B`;
+  };
+
+  const homeGrid = new Map(figures.map(figure => [figure, figure.closest('.grid')]));
+  for (const figure of figures) figure.dataset.folder = figure.closest('section').dataset.folder || '';
+  const visibleFigures = () => figures.filter(figure => !figure.hidden);
+  let lightboxIndex = -1;
+  const lightboxSource = figure => {
+    const video = figure.querySelector('video');
+    return fileMode ? video.dataset.videoUri : `/media/${video.dataset.assetId}/video`;
+  };
+  const closeLightbox = () => {
+    lightbox.hidden = true;
+    lightboxIndex = -1;
+    lbVideo.pause();
+    lbVideo.removeAttribute('src');
+    lbVideo.load();
+  };
+  const showLightbox = figure => {
+    const video = figure.querySelector('video');
+    const visible = visibleFigures();
+    lightboxIndex = Math.max(0, visible.indexOf(figure));
+    lbVideo.src = lightboxSource(figure);
+    lbTitle.textContent = video.dataset.name;
+    lbCount.textContent = `${lightboxIndex + 1} / ${visible.length}`;
+    lightbox.hidden = false;
+    lbVideo.play().catch(() => {});
+  };
+  const stepLightbox = direction => {
+    const visible = visibleFigures();
+    if (!visible.length) return closeLightbox();
+    lightboxIndex = (lightboxIndex + direction + visible.length) % visible.length;
+    showLightbox(visible[lightboxIndex]);
+  };
+  lightbox.querySelector('#lbClose').addEventListener('click', closeLightbox);
+  lightbox.querySelector('#lbPrev').addEventListener('click', () => stepLightbox(-1));
+  lightbox.querySelector('#lbNext').addEventListener('click', () => stepLightbox(1));
+  lightbox.addEventListener('click', event => {
+    if (event.target === lightbox || event.target === lbVideo) closeLightbox();
+  });
+  const isTyping = event => ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target?.tagName);
+  const moveCardFocus = direction => {
+    const visible = visibleFigures();
+    if (!visible.length) return;
+    const current = document.activeElement?.closest('figure');
+    const position = current ? visible.indexOf(current) : -1;
+    const next = visible[(position + direction + visible.length) % visible.length];
+    next.querySelector('video').focus();
+    next.scrollIntoView({ block: 'nearest' });
+  };
+  document.addEventListener('keydown', event => {
+    if (!lightbox.hidden) {
+      if (event.key === 'Escape') closeLightbox();
+      else if (event.key === 'ArrowRight') stepLightbox(1);
+      else if (event.key === 'ArrowLeft') stepLightbox(-1);
+      return;
+    }
+    if (isTyping(event)) return;
+    if (event.key === 'j' || event.key === 'ArrowDown') { event.preventDefault(); moveCardFocus(1); }
+    else if (event.key === 'k' || event.key === 'ArrowUp') { event.preventDefault(); moveCardFocus(-1); }
+  });
   const applyView = () => {
     const query = controls.filter.value.toLocaleLowerCase().trim();
     const codec = controls.codec.value;
     const resolution = controls.resolution.value;
     const repair = controls.repair.value;
-    let visibleTotal = 0;
+    const duration = controls.duration.value;
+    const folder = controls.folder.value;
+    document.body.classList.toggle('flat', controls.flat.checked);
+    for (const figure of figures) homeGrid.get(figure).append(figure);
+    let visibleTotal = 0, visibleBytes = 0, visibleSeconds = 0;
 
     for (const figure of figures) {
       const matches = (!query || figure.dataset.search.includes(query))
         && (codec === 'all' || figure.dataset.codec === codec)
         && resolutionMatches(Number(figure.dataset.height), resolution)
-        && (repair === 'all' || figure.dataset.repaired === repair);
+        && (repair === 'all' || figure.dataset.repaired === repair)
+        && durationMatches(Number(figure.dataset.duration), duration)
+        && (folder === 'all' || figure.dataset.folder === folder);
       figure.hidden = !matches;
       if (!matches) {
         const video = figure.querySelector('video');
         video.pause();
         video.currentTime = 0;
-      } else visibleTotal++;
+      } else {
+        visibleTotal++;
+        visibleBytes += Number(figure.dataset.size) || 0;
+        visibleSeconds += Number(figure.dataset.duration) || 0;
+      }
     }
 
     const compare = comparators[controls.sort.value] || comparators['name-asc'];
@@ -1034,27 +1184,41 @@ document.addEventListener('DOMContentLoaded', () => {
       section.hidden = visible === 0;
       section.querySelector('.folder-count').textContent = `${visible} / ${cards.length}`;
     }
-    stats.textContent = `${visibleTotal} / ${figures.length} videos`;
+    const flatCards = figures.slice().sort(compare);
+    for (const card of flatCards) {
+      (controls.flat.checked ? flatGrid : homeGrid.get(card)).append(card);
+    }
+    const hours = Math.floor(visibleSeconds / 3600), minutes = Math.floor((visibleSeconds % 3600) / 60);
+    stats.textContent = `${visibleTotal} / ${figures.length} videos · ${formatBytes(visibleBytes)} · ${hours}h ${minutes}m`;
     try {
       localStorage.setItem('thumbnail-gallery-controls', JSON.stringify({
+        filter: controls.filter.value,
         sort: controls.sort.value,
         codec: controls.codec.value,
         resolution: controls.resolution.value,
-        repair: controls.repair.value
+        repair: controls.repair.value,
+        duration: controls.duration.value,
+        folder: controls.folder.value,
+        flat: String(controls.flat.checked)
       }));
     } catch (_) {}
   };
 
   controls.filter.addEventListener('input', applyView);
-  for (const control of [controls.sort, controls.codec, controls.resolution, controls.repair]) {
+  for (const control of [controls.sort, controls.codec, controls.resolution, controls.repair,
+                         controls.duration, controls.folder]) {
     control.addEventListener('change', applyView);
   }
+  controls.flat.addEventListener('change', applyView);
   document.querySelector('#reset').addEventListener('click', () => {
     controls.filter.value = '';
     controls.sort.value = 'name-asc';
     controls.codec.value = 'all';
     controls.resolution.value = 'all';
     controls.repair.value = 'all';
+    controls.duration.value = '';
+    controls.folder.value = 'all';
+    controls.flat.checked = false;
     applyView();
   });
   document.querySelectorAll('.folder-toggle').forEach(button => {
@@ -1084,10 +1248,11 @@ document.addEventListener('DOMContentLoaded', () => {
     video.load();
   };
 
-  document.querySelectorAll('video').forEach(video => {
+  document.querySelectorAll('.grid video').forEach(video => {
     const progress = video.parentElement.querySelector('.progress > span');
     const launch = () => {
-      if (fileMode) window.open(video.dataset.videoUri);
+      if (openMode === 'page') showLightbox(video.closest('figure'));
+      else if (fileMode) window.open(video.dataset.videoUri);
       else fetch('/launch/' + encodeURIComponent(video.dataset.assetId), { method: 'POST' });
     };
     const startPreview = () => {
@@ -1142,9 +1307,18 @@ document.addEventListener('DOMContentLoaded', () => {
       <option value="all">All files</option><option value="true">Repaired only</option>
       <option value="false">Original only</option>
     </select>
+    <select id="duration" aria-label="Filter by duration">
+      <option value="">Any duration</option><option value="lt5">&lt; 5 min</option>
+      <option value="5-15">5 – 15 min</option><option value="15-30">15 – 30 min</option>
+      <option value="30-60">30 – 60 min</option><option value="gt60">&gt; 60 min</option>
+    </select>
+    <select id="folder" aria-label="Filter by folder"><option value="all">All folders</option></select>
+    <span class="field--check"><input id="flat" type="checkbox"><label for="flat">Flat view</label></span>
+    <button id="modeBtn" type="button" title="Toggle how clicking a card opens the video">Open: …</button>
     <button id="reset" type="button">Reset</button>
   </div>
 </header>
+<div id="flatGrid"></div>
 """
 
 
@@ -1330,7 +1504,7 @@ def serve(page: Path, items: list[dict[str, Any]], port: int = 0) -> None:
             return start, end
 
     handler = partial(GalleryHandler, directory=str(page.parent))
-    with http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
+    with http.server.ThreadingHTTPServer(("127.0.0.1", port), handler) as server:
         port = server.server_address[1]
         url = f"http://127.0.0.1:{port}/{urllib.parse.quote(page.name)}"
         webbrowser.open(url)
@@ -1435,7 +1609,7 @@ def main() -> None:
         )
         build_html(items, width, page)
         print(f"Loaded {len(items)} video(s) from {root / f'{args.gallery_name}.json'}")
-        serve(page, items)
+        serve(page, items, port=args.port)
         return
 
     roots: list[Path] = []
@@ -1577,7 +1751,7 @@ def main() -> None:
     build_html(items, config.width, page)
     print(f"Gallery:  {page}\nManifest: {manifest}")
     if not args.no_serve:
-        serve(page, items)
+        serve(page, items, port=args.port)
 
 
 if __name__ == "__main__":

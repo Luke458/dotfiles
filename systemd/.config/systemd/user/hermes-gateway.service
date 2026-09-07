@@ -11,6 +11,7 @@ WorkingDirectory=/home/luke/.hermes
 Environment="PATH=/home/luke/.hermes/hermes-agent/venv/bin:/home/luke/.hermes/hermes-agent/node_modules/.bin:/usr/bin:/home/luke/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="VIRTUAL_ENV=/home/luke/.hermes/hermes-agent/venv"
 Environment="HERMES_HOME=/home/luke/.hermes"
+Environment="HERMES_SUPERVISED_CHILD=1"
 Restart=always
 RestartSec=5
 RestartForceExitStatus=75

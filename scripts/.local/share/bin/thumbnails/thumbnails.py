@@ -208,6 +208,11 @@ def read_current_cache(
         if not isinstance(cached_key, dict):
             return None
         normalized_key = dict(cached_key)
+        cached_source = normalized_key.get("source")
+        if isinstance(cached_source, dict) and isinstance(cached_source.get("path"), str):
+            normalized_key["source"] = dict(cached_source)
+            # The source path is provenance, not cache identity: it survives storage moves.
+            normalized_key["source"].pop("path", None)
         cached_config = normalized_key.get("config")
         if not isinstance(cached_config, dict):
             return None
@@ -231,6 +236,36 @@ def read_current_cache(
         return cached
     except (AttributeError, OSError, TypeError, ValueError, json.JSONDecodeError):
         return None
+
+
+def cleanup_stale_repair_artifacts(
+    items: list[dict[str, Any]], config: PreviewConfig, output_name: str
+) -> None:
+    """Drop repair copies left behind when a source was later fixed upstream.
+
+    A run with repair enabled may leave `.repaired.mkv`/`.repair.log` files
+    that a later clean encode no longer references. Remove those only, and
+    only when the current config no longer relies on repair at all.
+    """
+    if not config.repair_on_error:
+        return
+    for item in items:
+        if item.get("repaired") or item.get("status") == "failed":
+            continue
+        cache_path = Path(item["thumbnail"]).with_name(
+            Path(item["thumbnail"]).name.removesuffix(".jpg") + ".cache.json"
+        )
+        try:
+            cache = json.loads(cache_path.read_text(encoding="utf-8"))
+            if cache.get("used_repair"):
+                continue
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            continue
+        for suffix in (".repaired.mkv", ".repair.log"):
+            stale = Path(item["thumbnail"]).with_name(
+                Path(item["thumbnail"]).name.removesuffix(".jpg") + suffix
+            )
+            stale.unlink(missing_ok=True)
 
 
 def atomic_write_text(path: Path, content: str) -> None:
@@ -415,6 +450,21 @@ def process_video(video: Path, config: PreviewConfig, output_name: str, force: b
     output_directory.mkdir(exist_ok=True)
     thumbnail, preview, cache, repaired, repair_log = output_paths(video, output_directory)
     expected_cache = cache_payload(video, config)
+    if not force and cache.is_file():
+        try:
+            stored = json.loads(cache.read_text(encoding="utf-8"))
+            stored_key = stored.get("key")
+            stored_source = stored_key.get("source") if isinstance(stored_key, dict) else None
+            if isinstance(stored_source, dict):
+                stored_source = dict(stored_source)
+                stored_source["path"] = str(video.resolve())
+                if isinstance(stored_key, dict):
+                    stored_key = dict(stored_key)
+                    stored_key["source"] = stored_source
+                    stored["key"] = stored_key
+                    atomic_write_text(cache, json.dumps(stored, indent=2) + "\n")
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            pass
     cached = None if force else read_current_cache(
         cache, thumbnail, preview, repaired, expected_cache, config
     )
@@ -1185,7 +1235,7 @@ def build_html(items: list[dict[str, Any]], width: int, page: Path) -> None:
     atomic_write_text(page, "".join(parts))
 
 
-def serve(page: Path, items: list[dict[str, Any]]) -> None:
+def serve(page: Path, items: list[dict[str, Any]], port: int = 0) -> None:
     assets = {item["id"]: item for item in items}
 
     class GalleryHandler(http.server.SimpleHTTPRequestHandler):
@@ -1197,11 +1247,14 @@ def serve(page: Path, items: list[dict[str, Any]]) -> None:
             parts = parsed.path.strip("/").split("/")
             if len(parts) == 3 and parts[0] == "media":
                 item = assets.get(parts[1])
-                key = {"thumbnail": "thumbnail", "preview": "preview"}.get(parts[2])
-                if item is not None and key is not None:
-                    self.send_asset(Path(item[key]))
+                key = {"thumbnail": "thumbnail", "preview": "preview", "video": "video"}.get(parts[2])
+                if item is None or key is None:
+                    self.send_error(404)
                     return
-                self.send_error(404)
+                if key == "video" and not Path(item["video"]).is_file():
+                    self.send_error(404)
+                    return
+                self.send_asset(Path(item[key]))
                 return
             if parsed.path == "/":
                 self.send_response(302)
@@ -1293,7 +1346,8 @@ def parse_arguments() -> argparse.Namespace:
         description="Build an AV1 hover-preview gallery using this machine's RX 9070 XT."
     )
     parser.add_argument("dirs", nargs="*", help="Folders to scan (default: .)")
-    parser.add_argument("--recursive", action="store_true", help="Include subdirectories")
+    parser.add_argument("--recursive", action=argparse.BooleanOptionalAction, default=True,
+                        help="Include subdirectories (default: on; disable with --no-recursive)")
     parser.add_argument("--width", type=positive_int, default=800, help="Maximum preview width (default: 800)")
     parser.add_argument("--segments", type=positive_int, default=12, help="Requested clips per preview (default: 12)")
     parser.add_argument("--seg-len", type=positive_float, default=1.0, help="Seconds per clip (default: 1.0)")
@@ -1303,9 +1357,16 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--jobs", type=positive_int, default=2, help="Concurrent GPU encodes (default: 2)")
     parser.add_argument("--device", default="/dev/dri/renderD128", help="VAAPI render node")
     parser.add_argument(
+        "--no-repair",
+        action="store_false",
+        dest="repair_on_error",
+        help="Disable the automatic repair fallback for damaged sources (default: repair is on)",
+    )
+    parser.add_argument(
         "--repair-on-error",
         action="store_true",
-        help="Salvage a failed video into a separate repaired AV1 copy, then retry",
+        dest="repair_on_error",
+        help="Salvage a failed video into a separate repaired AV1 copy, then retry (default: on)",
     )
     parser.add_argument(
         "--repair-quality",
@@ -1316,6 +1377,8 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--force", action="store_true", help="Regenerate all assets")
     parser.add_argument("--out-dir", default="thumbnails_output", help="Per-folder output directory name")
     parser.add_argument("--gallery-name", default="master_gallery", help="Gallery HTML/JSON basename")
+    parser.add_argument("--port", type=int, default=0,
+                        help="Bind the server to this TCP port instead of a random one (default: random)")
     parser.add_argument(
         "--serve-existing",
         action="store_true",
@@ -1483,6 +1546,8 @@ def main() -> None:
                 f"{status:<9} {video} | elapsed {progress_time(elapsed)} "
                 f"ETA {progress_time(eta)}"
             )
+
+    cleanup_stale_repair_artifacts(items, config, args.out_dir)
 
     elapsed = time.monotonic() - started
     print(

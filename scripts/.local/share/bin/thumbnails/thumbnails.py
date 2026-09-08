@@ -1174,7 +1174,7 @@ h2 { display: flex; align-items: center; gap: 9px; margin: 30px 0 14px;
                  text-align: left; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
 .folder-toggle:hover { background: none; color: #8fd392; }
 section.collapsed .grid { display: none; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--card-width)), 1fr));
+.grid { display: grid; grid-template-columns: repeat(var(--cols, auto-fill), minmax(min(100%, var(--card-width)), 1fr));
         gap: 20px; }
 figure { min-width: 0; margin: 0; }
 .preview { position: relative; overflow: hidden; border-radius: 9px; background: #222;
@@ -1192,7 +1192,7 @@ figcaption { overflow-wrap: anywhere; padding-top: 7px; text-align: center; }
 #modeBtn { min-width: 170px; text-align: left; }
 #flatGrid { display: none; margin: 24px 0; }
 body.flat section { display: none !important; }
-body.flat #flatGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--card-width)), 1fr)); gap: 20px; }
+body.flat #flatGrid { display: grid; grid-template-columns: repeat(var(--cols, auto-fill), minmax(min(100%, var(--card-width)), 1fr)); gap: 20px; }
 #lightbox { position: fixed; inset: 0; z-index: 50; background: #05070af2; display: flex; flex-direction: column; }
 #lightbox[hidden] { display: none !important; }
 #lbBar { display: flex; align-items: center; gap: 8px; flex: none; padding: 8px 14px;
@@ -1205,6 +1205,7 @@ body.flat #flatGrid { display: grid; grid-template-columns: repeat(auto-fill, mi
   background: #111; border-top: 1px solid #333; transition: opacity .2s ease; }
 #lbControls.hidden-bar { opacity: 0; pointer-events: none; }
 #lbControls button { padding: 5px 10px; font-size: .82rem; }
+#lbControls #lbVolume { width: 84px; flex: none; accent-color: #65c466; padding: 0; }
 #lbControls .scrub { flex: 1; display: flex; align-items: center; height: 24px; margin: 0 4px; }
 #lbControls .scrub .track { position: relative; flex: 1; height: 5px; border-radius: 3px;
   background: #444; cursor: pointer; }
@@ -1257,6 +1258,8 @@ document.addEventListener('DOMContentLoaded', () => {
     '<button id="lbPrev10" type="button" title="Back 10s (Shift+←)">⏪</button>' +
     '<button id="lbNext10" type="button" title="Forward 10s (Shift+→)">⏩</button>' +
     '<span id="lbTime" class="time">0:00 / 0:00</span>' +
+    '<button id="lbMute" type="button" title="Mute / Unmute (M)">🔊</button>' +
+    '<input id="lbVolume" type="range" min="0" max="100" step="1" value="100" title="Volume">' +
     '<div class="scrub" title="Seek"><div class="track" id="lbScrub"><div class="fill"></div><div class="knob"></div></div></div>' +
     '<select id="lbSpeed" title="Playback speed (, / .)"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select>' +
     '<button id="lbPip" type="button" title="Picture-in-Picture (P)">PiP</button>' +
@@ -1274,6 +1277,7 @@ document.addEventListener('DOMContentLoaded', () => {
     repair: document.querySelector('#repair'),
     duration: document.querySelector('#duration'),
     folder: document.querySelector('#folder'),
+    columns: document.querySelector('#columns'),
     flat: document.querySelector('#flat')
   };
   const stats = document.querySelector('#stats');
@@ -1377,10 +1381,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const lbFill = lbScrub.querySelector('.fill');
   const lbKnob = lbScrub.querySelector('.knob');
   const lbSpeed = lightbox.querySelector('#lbSpeed');
+  const lbMute = lightbox.querySelector('#lbMute');
+  const lbVolume = lightbox.querySelector('#lbVolume');
   const lbPip = lightbox.querySelector('#lbPip');
   const lbFull = lightbox.querySelector('#lbFull');
   let scrubbing = false;
   let hideTimer = null;
+
+  // Muted by default so the first click doesn't blast audio; remembered per-browser.
+  const savedMuted = localStorage.getItem('thumbnail-gallery-muted');
+  lbVideo.muted = savedMuted === 'true';
+  const setMutedIcon = () => { lbMute.textContent = lbVideo.muted || lbVideo.volume === 0 ? '🔇' : '🔊'; };
+  const setVolume = value => {
+    const v = Math.max(0, Math.min(1, Number(value) || 0));
+    lbVideo.volume = v;
+    lbVolume.value = Math.round(v * 100);
+    if (v > 0 && lbVideo.muted) { lbVideo.muted = false; }
+    setMutedIcon();
+  };
+  const toggleMute = () => {
+    lbVideo.muted = !lbVideo.muted;
+    try { localStorage.setItem('thumbnail-gallery-muted', String(lbVideo.muted)); } catch (_) {}
+    setMutedIcon();
+  };
+  setMutedIcon();
 
   const fmtTime = seconds => {
     if (!isFinite(seconds) || seconds < 0) return '0:00';
@@ -1445,6 +1469,9 @@ document.addEventListener('DOMContentLoaded', () => {
     lbVideo.currentTime = Math.min(dur ? dur - 0.05 : lbVideo.currentTime + 10, lbVideo.currentTime + 10);
   });
   lbSpeed.addEventListener('change', () => setRate(lbSpeed.value));
+  lbMute.addEventListener('click', toggleMute);
+  lbVolume.addEventListener('input', () => setVolume(lbVolume.value / 100));
+  lbVideo.addEventListener('volumechange', setMutedIcon);
   lbPip.addEventListener('click', togglePip);
   lbFull.addEventListener('click', toggleFull);
   lbVideo.addEventListener('dblclick', toggleFull);
@@ -1545,6 +1572,9 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (event.key === ' ' || event.code === 'Space') { event.preventDefault(); togglePlay(); }
       else if (!isTyping(event) && (event.key === 'f' || event.key === 'F')) toggleFull();
       else if (!isTyping(event) && (event.key === 'p' || event.key === 'P')) togglePip();
+      else if (!isTyping(event) && (event.key === 'm' || event.key === 'M')) toggleMute();
+      else if (!isTyping(event) && event.key === 'ArrowUp') { event.preventDefault(); setVolume(lbVideo.volume + 0.05); }
+      else if (!isTyping(event) && event.key === 'ArrowDown') { event.preventDefault(); setVolume(lbVideo.volume - 0.05); }
       else if (!isTyping(event) && event.key === ',') bumpRate(-1);
       else if (!isTyping(event) && event.key === '.') bumpRate(1);
       return;
@@ -1607,6 +1637,7 @@ document.addEventListener('DOMContentLoaded', () => {
         repair: controls.repair.value,
         duration: controls.duration.value,
         folder: controls.folder.value,
+        columns: controls.columns.value,
         flat: String(controls.flat.checked)
       }));
     } catch (_) {}
@@ -1617,6 +1648,9 @@ document.addEventListener('DOMContentLoaded', () => {
                          controls.duration, controls.folder]) {
     control.addEventListener('change', applyView);
   }
+  const setColumns = () => { document.documentElement.style.setProperty('--cols', controls.columns.value); };
+  controls.columns.addEventListener('change', () => { setColumns(); applyView(); });
+  setColumns();
   controls.flat.addEventListener('change', applyView);
   document.querySelector('#reset').addEventListener('click', () => {
     controls.filter.value = '';
@@ -1626,6 +1660,8 @@ document.addEventListener('DOMContentLoaded', () => {
     controls.repair.value = 'all';
     controls.duration.value = '';
     controls.folder.value = 'all';
+    controls.columns.value = 'auto-fill';
+    setColumns();
     controls.flat.checked = false;
     applyView();
   });
@@ -1810,6 +1846,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <option value="30-60">30 – 60 min</option><option value="gt60">&gt; 60 min</option>
     </select>
     <select id="folder" aria-label="Filter by folder"><option value="all">All folders</option></select>
+    <select id="columns" aria-label="Grid columns">
+      <option value="auto-fill" selected>Auto width</option><option value="2">2 columns</option>
+      <option value="3">3 columns</option><option value="4">4 columns</option>
+      <option value="5">5 columns</option><option value="6">6 columns</option>
+    </select>
     <span class="field--check"><input id="flat" type="checkbox"><label for="flat">Flat view</label></span>
     <button id="modeBtn" type="button" title="Toggle how clicking a card opens the video">Open: …</button>
     <button id="reset" type="button">Reset</button>

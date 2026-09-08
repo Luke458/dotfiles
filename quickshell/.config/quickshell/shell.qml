@@ -198,8 +198,17 @@ ShellRoot {
     WlSessionLock {
         id: sessionLock
         locked: Lock.requested && root.realScreenCount > 0
-        onLockedChanged: Lock.updateSessionState(locked, secure)
-        onSecureChanged: Lock.updateSessionState(locked, secure)
+
+        // Quickshell can emit secureChanged during unlock before its lock
+        // object is cleared, without a subsequent lockedChanged notification.
+        // Read both values after the transition instead of caching that state.
+        function syncState(): void {
+            Lock.updateSessionState(sessionLock.locked, sessionLock.secure);
+        }
+
+        onLockedChanged: Qt.callLater(syncState)
+        onSecureChanged: Qt.callLater(syncState)
+        Component.onCompleted: Qt.callLater(syncState)
 
         WlSessionLockSurface {
             Lockscreen {

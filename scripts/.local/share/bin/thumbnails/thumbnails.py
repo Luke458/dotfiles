@@ -570,7 +570,10 @@ def process_video(
         donor = adoption.get(fingerprint) if isinstance(fingerprint, str) else None
         if donor is not None and donor.resolve() != cache.resolve():
             try:
-                adopt_artifacts_into(donor, output_directory, video.resolve(), cache.stem)
+                adopt_artifacts_into(
+                    donor, output_directory, video.resolve(),
+                    cache.name.removesuffix(".cache.json"),
+                )
                 cached = read_current_cache(
                     cache, thumbnail, preview, repaired, expected_cache, config
                 )

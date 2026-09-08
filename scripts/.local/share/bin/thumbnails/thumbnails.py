@@ -389,6 +389,15 @@ def segment_ranges(duration: float, requested: int, length: float) -> list[tuple
     return ranges
 
 
+# Normalizes a frame's color metadata. Some sources (notably certain AV1
+# streams) carry reserved/unknown primaries and transfer characteristics,
+# which makes swscaler refuse *any* conversion of that frame (even a plain
+# scale). Stamping known bt709 values first makes the swscaler paths that
+# follow (thumbnail hwdownload+format=nv12, CPU scale fallbacks, repair
+# format=nv12,hwupload) work again.
+COLOR_NORMALIZE = "setparams=colorspace=bt709:color_primaries=bt709:color_trc=bt709"
+
+
 def vaapi_input_options(config: PreviewConfig) -> list[str]:
     return [
         "-init_hw_device", f"vaapi=thumbs:{config.device}",
@@ -412,7 +421,7 @@ def create_thumbnail(video: Path, destination: Path, duration: float, config: Pr
     hardware_command.extend([
         "-ss", f"{position:.6f}", "-i", str(video),
         "-frames:v", "1",
-        "-vf", f"{vaapi_scale(config)},hwdownload,format=nv12",
+        "-vf", f"{vaapi_scale(config)},hwdownload,{COLOR_NORMALIZE},format=nv12",
         "-q:v", "3", "-update", "1", "-y", str(destination),
     ])
     try:
@@ -422,7 +431,7 @@ def create_thumbnail(video: Path, destination: Path, duration: float, config: Pr
             "ffmpeg", "-hide_banner", "-loglevel", "error", "-xerror",
             "-ss", f"{position:.6f}", "-i", str(video),
             "-frames:v", "1",
-            "-vf", f"scale=w='{scaled_width}':h=-2",
+            "-vf", f"{COLOR_NORMALIZE},scale=w='{scaled_width}':h=-2",
             "-q:v", "3", "-update", "1", "-y", str(destination),
         ])
 
@@ -457,7 +466,7 @@ def create_preview_segment(
             "ffmpeg", "-hide_banner", "-loglevel", "error", "-xerror",
             "-vaapi_device", config.device,
             "-ss", f"{start:.6f}", "-i", str(video), "-an",
-            "-vf", f"scale=w='{scaled_width}':h=-2,format=nv12,hwupload",
+            "-vf", f"{COLOR_NORMALIZE},scale=w='{scaled_width}':h=-2,format=nv12,hwupload",
             "-r", str(config.fps), "-fps_mode", "cfr", "-frames:v", str(frame_count),
             "-c:v", "av1_vaapi",
             "-profile:v", "main",
@@ -511,7 +520,7 @@ def repair_video(video: Path, destination: Path, config: PreviewConfig) -> str:
         "-map", "0:s?",
         "-map_metadata", "0",
         "-map_chapters", "0",
-        "-vf", "format=nv12,hwupload",
+        "-vf", f"{COLOR_NORMALIZE},format=nv12,hwupload",
         "-c:v", "av1_vaapi",
         "-profile:v", "main",
         "-rc_mode", "CQP",

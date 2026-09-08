@@ -3,13 +3,28 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell.Widgets
 import "../services"
 
 Item {
     id: root
 
     property bool titleExpanded: false
+    readonly property bool observesPosition: visible && Media.hasMedia
+    property bool positionRegistered: false
+
+    function syncPositionConsumer(): void {
+        if (observesPosition === positionRegistered)
+            return;
+        Media.positionConsumers += observesPosition ? 1 : -1;
+        positionRegistered = observesPosition;
+    }
+
+    onObservesPositionChanged: syncPositionConsumer()
+    Component.onCompleted: syncPositionConsumer()
+    Component.onDestruction: {
+        if (positionRegistered)
+            Media.positionConsumers = Math.max(0, Media.positionConsumers - 1);
+    }
 
     implicitWidth: 350
     implicitHeight: mainLayout.implicitHeight + 40

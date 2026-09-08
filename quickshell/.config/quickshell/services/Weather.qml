@@ -137,8 +137,15 @@ QtObject {
     }
 
     function fetchWeather() {
-        if (!latitude || !longitude)
-            return ;
+        const lat = Number(latitude);
+        const lon = Number(longitude);
+        if (!latitude.trim() || !longitude.trim() || !isFinite(lat) || !isFinite(lon)
+                || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+            ++_fetchSeq; // Ignore any response for the previous location.
+            loading = false;
+            error = "Invalid coordinates";
+            return;
+        }
 
         loading = true;
         error = "";

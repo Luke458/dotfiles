@@ -139,8 +139,7 @@ QtObject {
             while (root.liveOrder.length > root.maximumTrackedNotifications) {
                 const evicted = root.liveOrder.shift();
                 if (evicted !== trackingId) {
-                    delete root.liveNotifications[evicted];
-                    root.removeFromPopupsById(evicted);
+                    root.expireNotification(evicted);
                 }
             }
             const item = root.notificationItem(notification, trackingId);
@@ -174,8 +173,7 @@ QtObject {
                 root.handleNotificationClosed(trackingId);
             });
 
-            if (showPopup)
-                root.schedulePopupTimeout(trackingId, notification);
+            root.schedulePopupTimeout(trackingId, notification);
             root.schedulePersist();
         }
     }
@@ -224,7 +222,7 @@ QtObject {
             return;
         const item = notificationItem(notification, trackingId);
         const hasHistoryItem = updateModelItem(history, trackingId, item);
-        const hasPopupItem = updateModelItem(popups, trackingId, item);
+        updateModelItem(popups, trackingId, item);
 
         if (notification.transient && hasHistoryItem) {
             removeFromHistoryById(trackingId);
@@ -234,8 +232,7 @@ QtObject {
             trimHistory();
         }
 
-        if (hasPopupItem)
-            schedulePopupTimeout(trackingId, notification);
+        schedulePopupTimeout(trackingId, notification);
         schedulePersist();
     }
 
@@ -249,10 +246,18 @@ QtObject {
         popupTimers[trackingId] = timer;
         timer.triggered.connect(() => {
             delete root.popupTimers[trackingId];
-            root.removeFromPopupsById(trackingId);
+            root.expireNotification(trackingId);
             timer.destroy();
         });
         timer.start();
+    }
+
+    function expireNotification(trackingId) {
+        const notification = root.liveNotifications[trackingId];
+        if (notification)
+            notification.expire();
+        root.forgetLiveNotification(trackingId);
+        root.removeFromPopupsById(trackingId);
     }
 
     function cancelPopupTimer(trackingId) {
@@ -301,6 +306,7 @@ QtObject {
     }
 
     function forgetLiveNotification(trackingId) {
+        cancelPopupTimer(trackingId);
         delete root.liveNotifications[trackingId];
         const index = root.liveOrder.indexOf(trackingId);
         if (index >= 0)
@@ -325,7 +331,6 @@ QtObject {
     }
 
     function removeFromPopupsById(trackingId) {
-        cancelPopupTimer(trackingId);
         for (var i = 0; i < popups.count; i++) {
             if (popups.get(i).trackingId === trackingId) {
                 popups.remove(i);
@@ -369,14 +374,12 @@ QtObject {
     }
 
     function clearAll() {
-        for (var i = history.count - 1; i >= 0; i--) {
-            const item = history.get(i);
-            const notification = item ? root.liveNotifications[item.trackingId] : null;
-            if (notification) {
-                try {
-                    notification.dismiss();
-                } catch (e) {}
-            }
+        // Include transient notifications, which have no history row.
+        const ids = root.liveOrder.slice();
+        for (const trackingId of ids) {
+            const notification = root.liveNotifications[trackingId];
+            if (notification)
+                notification.dismiss();
         }
         root.liveNotifications = ({});
         root.liveOrder = [];
@@ -390,8 +393,6 @@ QtObject {
     }
 
     function clearPopups() {
-        for (const trackingId in root.popupTimers)
-            root.cancelPopupTimer(trackingId);
         popups.clear();
     }
 

@@ -5,19 +5,24 @@ shell_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 qs_command="$shell_root/scripts/qs"
 config_path="$shell_root/shell.qml"
 
-lock_status=$("$qs_command" ipc call lock status 2>/dev/null || true)
-if [ -n "$lock_status" ] && printf '%s' "$lock_status" | jq -e '.locked or .requested or .pending or .sessionLocked or .secure' >/dev/null 2>&1; then
-    printf '%s\n' "Refusing to restart Quickshell while the session lock is active or pending." >&2
-    exit 75
-fi
-
-instance_json=$("$qs_command" list -j 2>/dev/null || true)
+# Refuse to act on an unknown instance list or unknown lock state.
+instance_json=$("$qs_command" list -j) || exit 75
 if ! printf '%s' "$instance_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
-    instance_json='[]'
+    printf '%s\n' "Cannot read Quickshell instances; refusing restart." >&2
+    exit 75
 fi
 instance_pids=$(printf '%s' "$instance_json" | jq -r --arg path "$config_path" '.[] | select(.config_path == $path) | .pid')
 
 for instance_pid in $instance_pids; do
+    lock_status=$(timeout 2 "$qs_command" ipc --pid "$instance_pid" call lock status 2>/dev/null) || lock_status=''
+    if ! printf '%s' "$lock_status" | jq -e '
+        type == "object" and
+        (.locked == false) and (.requested == false) and
+        (.pending == false) and (.sessionLocked == false) and (.secure == false)
+    ' >/dev/null 2>&1; then
+        printf 'Cannot confirm Quickshell process %s is unlocked; refusing restart.\n' "$instance_pid" >&2
+        exit 75
+    fi
     "$qs_command" kill --pid "$instance_pid"
 done
 

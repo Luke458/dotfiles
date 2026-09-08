@@ -31,6 +31,8 @@ QtObject {
     property bool canGoPrevious: activePlayer ? activePlayer.canGoPrevious : false
     property bool canSeek: activePlayer ? activePlayer.canSeek : false
 
+    property int positionConsumers: 0
+
     property bool textHidden: false
     readonly property bool hasMedia: activePlayer !== null && trackTitle !== "" && playbackState !== MprisPlaybackState.Stopped
 
@@ -118,8 +120,9 @@ QtObject {
     // writing currentPosition and breaking the binding above.
     property Timer positionTimer: Timer {
         interval: 250
-        running: root.activePlayer && root.playbackState === MprisPlaybackState.Playing
+        running: root.positionConsumers > 0 && root.activePlayer && root.playbackState === MprisPlaybackState.Playing
         repeat: true
+        triggeredOnStart: true
         // qmllint disable missing-property
         onTriggered: root.activePlayer.positionChanged() // qmllint disable missing-property
         // qmllint enable missing-property

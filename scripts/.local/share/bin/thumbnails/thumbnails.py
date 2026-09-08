@@ -163,6 +163,81 @@ def asset_id(path: Path) -> str:
     return hashlib.sha256(os.fsencode(path.resolve())).hexdigest()[:16]
 
 
+def content_fingerprint(path: Path) -> str | None:
+    """Cheap content identity: sha256(first MiB | size | last MiB).
+
+    Survives renames and moves (content unchanged) without hashing the whole
+    file. Returns None when the file is unreadable or too small to fingerprint.
+    """
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return None
+    if size < 16:
+        return None
+    try:
+        with path.open("rb") as handle:
+            head = handle.read(1024 * 1024)
+            if size > 2 * 1024 * 1024:
+                handle.seek(-1024 * 1024, os.SEEK_END)
+                tail = handle.read()
+            else:
+                tail = handle.read()
+    except OSError:
+        return None
+    digest = hashlib.sha256()
+    digest.update(head)
+    digest.update(str(size).encode("ascii"))
+    digest.update(tail)
+    return digest.hexdigest()[:20]
+
+
+def adoption_index(roots: list[Path], recursive: bool, output_name: str) -> dict[str, Path]:
+    """Map content fingerprint -> existing cache file, for reusing artifacts
+    after a rename/move so no re-encode is needed."""
+    index: dict[str, Path] = {}
+    for directory in discover_output_directories(roots, recursive, output_name):
+        for cache in sorted(directory.glob("*.cache.json")):
+            try:
+                payload = json.loads(cache.read_text(encoding="utf-8"))
+                key = payload["key"]
+                source = key.get("source", {})
+                fingerprint = source.get("fingerprint")
+            except (KeyError, OSError, TypeError, json.JSONDecodeError):
+                continue
+            if not isinstance(fingerprint, str):
+                continue
+            index.setdefault(fingerprint, cache)
+    return index
+
+
+def adopt_artifacts_into(
+    cache: Path, target_dir: Path, source_path: Path, expected_basename: str,
+) -> None:
+    """Copy an existing artifact set into target_dir, renaming to the expected
+    basename so the local cache check passes, and rewriting the source path."""
+    source_basename = cache.name.removesuffix(".cache.json")
+    for suffix in (".jpg", ".av1.webm", ".cache.json", ".repaired.mkv", ".repair.log"):
+        origin = cache.with_name(source_basename + suffix)
+        if not origin.exists():
+            continue
+        destination = target_dir / (expected_basename + suffix)
+        if suffix == ".cache.json":
+            try:
+                data = json.loads(origin.read_text(encoding="utf-8"))
+                if isinstance(data.get("key"), dict) and isinstance(data["key"].get("source"), dict):
+                    data["key"]["source"]["path"] = str(source_path)
+            except (OSError, json.JSONDecodeError, TypeError):
+                data = None
+            if data is not None:
+                atomic_write_text(destination, json.dumps(data, indent=2) + "\n")
+            else:
+                shutil.copy2(origin, destination)
+        else:
+            shutil.copy2(origin, destination)
+
+
+
 def output_paths(video: Path, output_directory: Path) -> tuple[Path, Path, Path, Path, Path]:
     suffix = hashlib.sha256(os.fsencode(video.name)).hexdigest()[:10]
     basename = f"{video.stem}-{suffix}"
@@ -180,6 +255,7 @@ def cache_payload(video: Path, config: PreviewConfig) -> dict[str, Any]:
     preview_config = asdict(config)
     preview_config.pop("repair_on_error")
     preview_config.pop("repair_quality")
+    fingerprint = content_fingerprint(video)
     return {
         "version": CACHE_VERSION,
         "profile": ENCODE_PROFILE,
@@ -187,9 +263,11 @@ def cache_payload(video: Path, config: PreviewConfig) -> dict[str, Any]:
             "path": str(video.resolve()),
             "size": stat.st_size,
             "mtime_ns": stat.st_mtime_ns,
+            "fingerprint": fingerprint,
         },
         "config": preview_config,
     }
+
 
 
 def read_current_cache(
@@ -213,6 +291,15 @@ def read_current_cache(
             normalized_key["source"] = dict(cached_source)
             # The source path is provenance, not cache identity: it survives storage moves.
             normalized_key["source"].pop("path", None)
+        # Fingerprint is provenance used for rename/move adoption, not cache
+        # identity: old caches lack it, so strip it from both sides of the compare.
+        if isinstance(normalized_key.get("source"), dict):
+            normalized_key["source"].pop("fingerprint", None)
+        expected_source = dict(expected.get("source", {})) if isinstance(expected.get("source"), dict) else {}
+        expected_source.pop("path", None)
+        expected_source.pop("fingerprint", None)
+        expected_for_compare = dict(expected)
+        expected_for_compare["source"] = expected_source
         cached_config = normalized_key.get("config")
         if not isinstance(cached_config, dict):
             return None
@@ -223,7 +310,7 @@ def read_current_cache(
         used_repair = bool(cached.get("used_repair"))
         repaired_quality = cached.get("repair_quality", legacy_repair_quality)
         if (
-            normalized_key != expected
+            normalized_key != expected_for_compare
             or thumbnail_path.stat().st_size == 0
             or preview_path.stat().st_size == 0
             or (used_repair and repaired_path.stat().st_size == 0)
@@ -445,7 +532,13 @@ def describe_ffmpeg_error(error: subprocess.CalledProcessError) -> str:
     return "\n".join(lines[-8:]) or str(error)
 
 
-def process_video(video: Path, config: PreviewConfig, output_name: str, force: bool) -> dict[str, Any]:
+def process_video(
+    video: Path,
+    config: PreviewConfig,
+    output_name: str,
+    force: bool,
+    adoption: dict[str, Path] | None = None,
+) -> dict[str, Any]:
     output_directory = video.parent / output_name
     output_directory.mkdir(exist_ok=True)
     thumbnail, preview, cache, repaired, repair_log = output_paths(video, output_directory)
@@ -458,6 +551,7 @@ def process_video(video: Path, config: PreviewConfig, output_name: str, force: b
             if isinstance(stored_source, dict):
                 stored_source = dict(stored_source)
                 stored_source["path"] = str(video.resolve())
+                stored_source["fingerprint"] = expected_cache["source"].get("fingerprint")
                 if isinstance(stored_key, dict):
                     stored_key = dict(stored_key)
                     stored_key["source"] = stored_source
@@ -468,6 +562,20 @@ def process_video(video: Path, config: PreviewConfig, output_name: str, force: b
     cached = None if force else read_current_cache(
         cache, thumbnail, preview, repaired, expected_cache, config
     )
+
+    # Rename/move rescue: same content lives elsewhere already -> reuse its
+    # artifacts instead of re-encoding (fingerprint matches, local cache missing).
+    if cached is None and not force and adoption is not None:
+        fingerprint = expected_cache["source"].get("fingerprint")
+        donor = adoption.get(fingerprint) if isinstance(fingerprint, str) else None
+        if donor is not None and donor.resolve() != cache.resolve():
+            try:
+                adopt_artifacts_into(donor, output_directory, video.resolve(), cache.stem)
+                cached = read_current_cache(
+                    cache, thumbnail, preview, repaired, expected_cache, config
+                )
+            except (OSError, json.JSONDecodeError):
+                cached = None
 
     if cached is not None:
         status = "cached"
@@ -548,9 +656,14 @@ def process_video(video: Path, config: PreviewConfig, output_name: str, force: b
         status = "repaired" if used_repair else "generated"
 
     playback_video = repaired if used_repair else video
-
+    fingerprint = expected_cache["source"].get("fingerprint")
+    stable_id = (
+        "c" + str(fingerprint)
+        if isinstance(fingerprint, str) and fingerprint
+        else asset_id(video)
+    )
     return {
-        "id": asset_id(video),
+        "id": stable_id,
         "name": video.name,
         "video": str(playback_video.resolve()),
         "original": str(video.resolve()),
@@ -748,6 +861,37 @@ def normalize_manifest_item(raw: Any, base: Path) -> dict[str, Any]:
     }
 
 
+def apply_overrides(items: list[dict[str, Any]], overrides: dict[str, Any]) -> None:
+    """Apply per-item name/tag overrides (keyed by stable id) in place.
+
+    Overrides never touch files on disk; they only relabel the gallery entry.
+    """
+    for item in items:
+        override = overrides.get(item.get("id"))
+        if not isinstance(override, dict):
+            continue
+        name = override.get("name")
+        if isinstance(name, str) and name.strip():
+            item["name"] = name.strip()
+            item["display_name"] = item["name"]
+            item["original_name"] = item.get("original_name") or Path(item.get("original", item["video"])).name
+        tags = override.get("tags")
+        if isinstance(tags, str):
+            item["tags"] = [t.strip() for t in tags.split(",") if t.strip()]
+        elif isinstance(tags, list):
+            item["tags"] = [str(t).strip() for t in tags if str(t).strip()]
+
+
+def clean_overrides(overrides: dict[str, Any], valid_ids: set[str]) -> dict[str, Any]:
+    """Drop override entries whose video no longer exists, so dead ids don't
+    accumulate in the manifest."""
+    return {
+        item_id: entry
+        for item_id, entry in overrides.items()
+        if item_id in valid_ids and isinstance(entry, dict)
+    }
+
+
 def item_cache_path(item: dict[str, Any]) -> Path | None:
     thumbnail = Path(item["thumbnail"])
     if thumbnail.name.endswith(".jpg"):
@@ -810,7 +954,7 @@ def load_existing_gallery(
     gallery_name: str,
     default_width: int,
     metadata_jobs: int = 2,
-) -> tuple[list[dict[str, Any]], int, Path]:
+) -> tuple[list[dict[str, Any]], int, Path, Path, dict[str, Any]]:
     manifest = root / f"{gallery_name}.json"
     try:
         payload = json.loads(manifest.read_text(encoding="utf-8"))
@@ -837,6 +981,13 @@ def load_existing_gallery(
         raise SystemExit(f"Invalid existing manifest {manifest}: {error}") from error
     if not items:
         raise SystemExit(f"Existing manifest contains no videos: {manifest}")
+
+    # Apply saved name/tag overrides (keyed by stable id).
+    overrides: dict[str, Any] = {}
+    if isinstance(payload, dict) and isinstance(payload.get("overrides"), dict):
+        overrides = payload["overrides"]
+        apply_overrides(items, overrides)
+        overrides = clean_overrides(overrides, {str(item["id"]) for item in items})
 
     missing_metadata = [index for index, item in enumerate(items) if not valid_metadata(item)]
     if missing_metadata:
@@ -871,7 +1022,7 @@ def load_existing_gallery(
                     "items": items,
                 }
             atomic_write_text(manifest, json.dumps(persisted_payload, indent=2) + "\n")
-    return items, width, root / f"{gallery_name}.html"
+    return items, width, root / f"{gallery_name}.html", manifest, overrides
 
 
 def prune_manifest_entries(root: Path, gallery_name: str) -> int:
@@ -967,6 +1118,23 @@ body.flat #flatGrid { display: grid; grid-template-columns: repeat(auto-fill, mi
 #lbCount { color: #aaa; font-size: .8rem; }
 #lbVideo { flex: 1; width: 100%; background: #000; align-items: center; }
 [hidden] { display: none !important; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+#editModal { position:fixed; inset:0; z-index:100; background:#000c; display:flex; align-items:center; justify-content:center; }
+#editModal[hidden] { display:none !important; }
+#editForm { background:#1a1a1a; border:1px solid #444; border-radius:12px; padding:24px 28px; width:min(480px,90vw); animation:fadeIn .15s ease-out; }
+#editForm h3 { margin:0 0 14px; font-size:1.1rem; }
+#editForm label { display:block; font-size:.82rem; color:#aaa; margin-bottom:4px; }
+#editForm input, #editForm textarea { width:100%; margin-bottom:12px; }
+#editForm textarea { min-height:60px; resize:vertical; }
+#editForm .btn-row { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+#editForm .btn-row button { padding:8px 16px; }
+#editForm .btn-row button.primary { background:#2d6a35; border-color:#3a8a46; }
+#editForm .btn-row button.primary:hover { background:#357a3f; }
+#editStatus { font-size:.8rem; margin-top:6px; color:#6f6; min-height:1em; }
+.tags { margin-top:4px; display:flex; flex-wrap:wrap; gap:4px; }
+.tag { display:inline-block; background:#2a2a2a; border:1px solid #444; border-radius:10px; padding:1px 8px; font-size:.7rem; color:#aab; }
+.edit-btn { position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; background:#222d; border:1px solid #555; color:#aab; cursor:pointer; font-size:1rem; line-height:28px; text-align:center; padding:0; }
+.edit-btn:hover { background:#333; color:#fff; border-color:#888; }
 @media (max-width: 700px) {
   body { padding-right: 12px; padding-left: 12px; }
   header { margin-right: -12px; margin-left: -12px; padding-right: 12px; padding-left: 12px; }
@@ -1280,6 +1448,95 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     posterObserver.observe(video);
   });
+
+  // --- Edit name/tags modal ---
+  const editModal = document.createElement('div');
+  editModal.id = 'editModal';
+  editModal.hidden = true;
+  editModal.innerHTML =
+    '<div id="editForm">' +
+    '<h3>Edit video</h3>' +
+    '<label for="editName">Display name</label>' +
+    '<input id="editName" type="text" autocomplete="off">' +
+    '<label for="editTags">Tags (comma-separated)</label>' +
+    '<textarea id="editTags" placeholder="e.g. 4k, favorite, series-name"></textarea>' +
+    '<div id="editStatus"></div>' +
+    '<div class="btn-row">' +
+    '<button id="editCancel" type="button">Cancel</button>' +
+    '<button id="editSave" type="button" class="primary">Save</button>' +
+    '</div></div>';
+  document.body.append(editModal);
+  const editNameInput = editModal.querySelector('#editName');
+  const editTagsInput = editModal.querySelector('#editTags');
+  const editStatus = editModal.querySelector('#editStatus');
+  let editTargetId = null;
+
+  const openEditModal = (assetId) => {
+    editTargetId = assetId;
+    const fig = figures.find(f => f.querySelector('video')?.dataset.assetId === assetId);
+    const video = fig?.querySelector('video');
+    editNameInput.value = video?.dataset.name || '';
+    editTagsInput.value = video?.dataset.tags || '';
+    editStatus.textContent = '';
+    editModal.hidden = false;
+    editNameInput.focus();
+  };
+  const closeEditModal = () => {
+    editModal.hidden = true;
+    editTargetId = null;
+  };
+  const saveEdit = () => {
+    if (!editTargetId) return;
+    const name = editNameInput.value.trim();
+    const tags = editTagsInput.value.split(',').map(t => t.trim()).filter(Boolean);
+    fetch(`/edit/${encodeURIComponent(editTargetId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name || null, tags }),
+    }).then(r => {
+      if (r.ok) {
+        editStatus.textContent = 'Saved \u2713';
+        const fig = figures.find(f => f.querySelector('video')?.dataset.assetId === editTargetId);
+        if (fig) {
+          const video = fig.querySelector('video');
+          const nameEl = fig.querySelector('.video-name');
+          if (name && nameEl) {
+            nameEl.textContent = name;
+            video.dataset.name = name;
+            fig.dataset.name = name.toLowerCase();
+          }
+          let tagsEl = fig.querySelector('.tags');
+          if (tags.length) {
+            if (!tagsEl) {
+              tagsEl = document.createElement('div');
+              tagsEl.className = 'tags';
+              fig.querySelector('figcaption').append(tagsEl);
+            }
+            tagsEl.innerHTML = tags.map(t => `<span class="tag">${t.replace(/</g,'&lt;')}</span>`).join(' ');
+          } else if (tagsEl) {
+            tagsEl.remove();
+          }
+          video.dataset.tags = tags.join(',');
+        }
+        setTimeout(closeEditModal, 600);
+      } else {
+        editStatus.textContent = 'Save failed';
+      }
+    }).catch(() => { editStatus.textContent = 'Save failed (offline?)'; });
+  };
+  editModal.querySelector('#editCancel').addEventListener('click', closeEditModal);
+  editModal.querySelector('#editSave').addEventListener('click', saveEdit);
+  editModal.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
+  document.addEventListener('keydown', e => {
+    if (!editModal.hidden && e.key === 'Escape') closeEditModal();
+  });
+  document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openEditModal(btn.dataset.editId);
+    });
+  });
+
   applyView();
 });
 </script>
@@ -1348,22 +1605,19 @@ def format_date(timestamp: float) -> str:
     return time.strftime("%Y-%m-%d", time.localtime(timestamp)) if timestamp > 0 else "unknown date"
 
 
-def build_html(items: list[dict[str, Any]], width: int, page: Path) -> None:
+def build_gallery_html(items: list[dict[str, Any]], width: int) -> str:
     grouped: dict[str, list[dict[str, Any]]] = {}
     for item in items:
         grouped.setdefault(item["folder"], []).append(item)
 
     parts = [HTML_HEAD.replace("WIDTH", str(width))]
     for folder in sorted(grouped):
-        try:
-            title = str(Path(folder).relative_to(page.parent)) or "."
-        except ValueError:
-            title = folder
         folder_items = grouped[folder]
+        folder_title = folder.split("/")[-1] or "(top level)"
         parts.append(
             f'<section data-folder="{attribute(folder.lower())}"><h2>'
             f'<button class="folder-toggle" type="button" aria-expanded="true">'
-            f'▾ {html.escape(title)}</button><span class="folder-count">'
+            f'\u25be {html.escape(folder_title)}</button><span class="folder-count">'
             f'{len(folder_items)} / {len(folder_items)}</span></h2><div class="grid">'
         )
         for item in sorted(folder_items, key=lambda entry: entry.get("name", entry["video"]).lower()):
@@ -1379,12 +1633,18 @@ def build_html(items: list[dict[str, Any]], width: int, page: Path) -> None:
             source_width = int(item.get("width", 0) or 0)
             source_height = int(item.get("height", 0) or 0)
             repaired = bool(item.get("repaired", False))
-            resolution = f"{source_width}×{source_height}" if source_width and source_height else "unknown res"
-            metadata = (
-                f"{format_duration(duration)} · {resolution} · {codec.upper()} · "
-                f"{format_size(size)} · {format_date(mtime)}"
+            resolution = f"{source_width}\u00d7{source_height}" if source_width and source_height else "unknown res"
+            tags = item.get("tags") or []
+            tags_html = (
+                " ".join(
+                    f'<span class="tag">{html.escape(str(t))}</span>' for t in tags
+                )
             )
-            search = f"{name} {folder} {codec} {resolution}".lower()
+            metadata = (
+                f"{format_duration(duration)} \u00b7 {resolution} \u00b7 {codec.upper()} \u00b7 "
+                f"{format_size(size)} \u00b7 {format_date(mtime)}"
+            )
+            search = f"{name} {folder} {codec} {resolution} {' '.join(str(t) for t in tags)}".lower()
             parts.append(
                 f'<figure data-name="{attribute(name.lower())}" data-search="{attribute(search)}" '
                 f'data-codec="{attribute(codec)}" data-width="{source_width}" data-height="{source_height}" '
@@ -1393,24 +1653,41 @@ def build_html(items: list[dict[str, Any]], width: int, page: Path) -> None:
                 '<div class="preview">'
                 f'<video muted loop playsinline preload="none" tabindex="0" role="button" '
                 f'aria-label="Open {attribute(name)}" data-asset-id="{identifier}" '
+                f'data-name="{attribute(name)}" data-tags="{attribute(",".join(str(t) for t in tags))}" '
                 f'data-video-uri="{attribute(video.as_uri())}" '
                 f'data-poster-file="{attribute(thumbnail.as_uri())}" '
                 f'data-poster-http="/media/{identifier}/thumbnail">'
                 f'<source data-src-file="{attribute(preview.as_uri())}" '
                 f'data-src-http="/media/{identifier}/preview" type="video/webm">'
-                '</video><div class="progress"><span></span></div></div>'
+                '</video><div class="progress"><span></span></div>'
+                f'<button class="edit-btn" data-edit-id="{identifier}" title="Edit name and tags" type="button">\u270e</button>'
+                '</div>'
                 f'<figcaption><div class="video-name">{html.escape(name)}</div>'
                 f'<div class="video-meta">{html.escape(metadata)}'
-                f'{" · <span class=\"repair-badge\">repaired</span>" if repaired else ""}'
-                '</div></figcaption></figure>'
+                f'{(" \u00b7 <span class=\"repair-badge\">repaired</span>" if repaired else "")}'
+                f'</div>'
+                f'{("&#8201;<div class=\"tags\">" + tags_html + "</div>") if tags_html else ""}'
+                f'</figcaption></figure>'
             )
         parts.append("</div></section>")
     parts.append("</body></html>\n")
-    atomic_write_text(page, "".join(parts))
+    return "".join(parts)
 
 
-def serve(page: Path, items: list[dict[str, Any]], port: int = 0) -> None:
+def build_html(items: list[dict[str, Any]], width: int, page: Path) -> None:
+    atomic_write_text(page, build_gallery_html(items, width))
+
+
+def serve(
+    page: Path,
+    items: list[dict[str, Any]],
+    port: int = 0,
+    width: int = 800,
+    manifest: Path | None = None,
+    overrides: dict[str, Any] | None = None,
+) -> None:
     assets = {item["id"]: item for item in items}
+    overrides = overrides if overrides is not None else {}
 
     class GalleryHandler(http.server.SimpleHTTPRequestHandler):
         def log_message(self, _format: str, *args: object) -> None:
@@ -1435,7 +1712,66 @@ def serve(page: Path, items: list[dict[str, Any]], port: int = 0) -> None:
                 self.send_header("Location", "/" + urllib.parse.quote(page.name))
                 self.end_headers()
                 return
+            # Serve the gallery HTML dynamically so live edits show up
+            # without needing a re-scan to rewrite the file.
+            if page.is_file() and parsed.path.endswith(page.name):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache")
+                body = build_gallery_html(items, width).encode("utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                try:
+                    self.wfile.write(body)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+                return
             super().do_GET()
+
+        def do_PUT(self) -> None:
+            parts = urllib.parse.urlparse(self.path).path.strip("/").split("/")
+            if len(parts) == 2 and parts[0] == "edit":
+                item_id = parts[1]
+                if item_id not in assets:
+                    self.send_error(404)
+                    return
+                try:
+                    length = int(self.headers.get("Content-Length") or 0)
+                    raw = self.rfile.read(length) if length else b"{}"
+                    data = json.loads(raw.decode("utf-8") or "{}")
+                except (ValueError, json.JSONDecodeError, OSError):
+                    data = {}
+                entry: dict[str, Any] = {}
+                name = data.get("name")
+                if isinstance(name, str) and name.strip():
+                    entry["name"] = name.strip()
+                tags = data.get("tags")
+                if isinstance(tags, str):
+                    entry["tags"] = [t.strip() for t in tags.split(",") if t.strip()]
+                elif isinstance(tags, list):
+                    entry["tags"] = [str(t).strip() for t in tags if str(t).strip()]
+                if entry:
+                    overrides[item_id] = entry
+                    # Persist immediately.
+                    if manifest is not None:
+                        try:
+                            payload = json.loads(manifest.read_text(encoding="utf-8"))
+                        except (OSError, json.JSONDecodeError):
+                            payload = {}
+                        if isinstance(payload, dict):
+                            payload["overrides"] = overrides
+                        atomic_write_text(manifest, json.dumps(payload, indent=2) + "\n")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                body = json.dumps({"ok": True, "id": item_id}).encode("utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                try:
+                    self.wfile.write(body)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+                return
+            self.send_error(404)
 
         def do_POST(self) -> None:
             parts = urllib.parse.urlparse(self.path).path.strip("/").split("/")
@@ -1604,12 +1940,12 @@ def main() -> None:
         root = Path(args.dirs[0] if args.dirs else ".").resolve()
         if not root.is_dir():
             raise SystemExit(f"Gallery directory does not exist: {root}")
-        items, width, page = load_existing_gallery(
+        items, width, page, manifest, overrides = load_existing_gallery(
             root, args.gallery_name, even(args.width), args.jobs
         )
         build_html(items, width, page)
         print(f"Loaded {len(items)} video(s) from {root / f'{args.gallery_name}.json'}")
-        serve(page, items, port=args.port)
+        serve(page, items, port=args.port, width=width, manifest=manifest, overrides=overrides)
         return
 
     roots: list[Path] = []
@@ -1638,7 +1974,7 @@ def main() -> None:
             if not removed:
                 continue
             try:
-                items, width, page = load_existing_gallery(
+                items, width, page, manifest, overrides = load_existing_gallery(
                     root, args.gallery_name, even(args.width), args.jobs
                 )
             except SystemExit:
@@ -1676,6 +2012,33 @@ def main() -> None:
         print("Finished: no videos found.")
         return
 
+    # Load any prior name/tag overrides (keyed by the id in the old manifest)
+    # so user edits survive a re-scan even if the id scheme changed.
+    prior_overrides: dict[str, Any] = {}
+    prior_id_by_video: dict[str, str] = {}
+    existing_manifest = roots[0] / f"{args.gallery_name}.json"
+    if existing_manifest.is_file():
+        try:
+            prior_payload = json.loads(existing_manifest.read_text(encoding="utf-8"))
+            prior_overrides = prior_payload.get("overrides", {}) if isinstance(prior_payload, dict) else {}
+            prior_items = prior_payload.get("items", []) if isinstance(prior_payload, dict) else prior_payload
+            for raw in prior_items if isinstance(prior_items, list) else []:
+                if not isinstance(raw, dict):
+                    continue
+                for key in ("video", "original"):
+                    if raw.get(key):
+                        try:
+                            prior_id_by_video[str(Path(raw[key]).resolve())] = str(raw.get("id"))
+                        except (OSError, TypeError, ValueError):
+                            pass
+        except (OSError, json.JSONDecodeError):
+            prior_overrides = {}
+
+    # Build a fingerprint -> cache index so renamed/moved videos reuse their
+    # existing artifacts instead of re-encoding.
+    adoption = adoption_index(roots, args.recursive, args.out_dir)
+    print(f"Adoption index: {len(adoption)} fingerprint(s) available for reuse")
+
     print(
         f"Processing {len(videos)} video(s) with AV1 VAAPI on {config.device} "
         f"({min(args.jobs, len(videos))} concurrent)"
@@ -1688,7 +2051,7 @@ def main() -> None:
     total = len(videos)
     with ThreadPoolExecutor(max_workers=min(args.jobs, len(videos))) as executor:
         futures = {
-            executor.submit(process_video, video, config, args.out_dir, args.force): video
+            executor.submit(process_video, video, config, args.out_dir, args.force, adoption): video
             for video in videos
         }
         for future in as_completed(futures):
@@ -1739,19 +2102,38 @@ def main() -> None:
         raise SystemExit("No previews were successfully generated")
 
     items.sort(key=lambda item: item["video"].lower())
+
+    # Carry user name/tag edits forward: look up each item's override by the id
+    # it had in the previous manifest (mapped through the video path, so edits
+    # survive both re-scans and a change of id scheme).
+    overrides: dict[str, Any] = {}
+    applied = 0
+    for item in items:
+        new_id = str(item["id"])
+        old_id = prior_id_by_video.get(str(Path(item["video"]).resolve()), new_id)
+        entry = prior_overrides.get(old_id) or prior_overrides.get(new_id)
+        if not isinstance(entry, dict):
+            continue
+        overrides[new_id] = entry
+        applied += 1
+    apply_overrides(items, overrides)
+    if applied:
+        print(f"Restored {applied} saved name/tag override(s).")
+
     output_base = roots[0]
     manifest = output_base / f"{args.gallery_name}.json"
     page = output_base / f"{args.gallery_name}.html"
     manifest_payload = {
         "profile": ENCODE_PROFILE,
         "config": asdict(config),
+        "overrides": overrides,
         "items": items,
     }
     atomic_write_text(manifest, json.dumps(manifest_payload, indent=2) + "\n")
     build_html(items, config.width, page)
     print(f"Gallery:  {page}\nManifest: {manifest}")
     if not args.no_serve:
-        serve(page, items, port=args.port)
+        serve(page, items, port=args.port, width=config.width, manifest=manifest, overrides=overrides)
 
 
 if __name__ == "__main__":

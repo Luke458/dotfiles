@@ -51,6 +51,7 @@ class OrphanGroup:
     cache: Path
     artifacts: tuple[Path, ...]
     total_size: int
+    fingerprint: str | None = None
 
 
 def positive_int(value: str) -> int:
@@ -713,14 +714,16 @@ def discover_output_directories(roots: list[Path], recursive: bool, output_name:
         if not recursive:
             continue
         for directory, directory_names, _file_names in os.walk(root):
+            # Detect output dirs *before* pruning them out of the walk, or the
+            # membership test below would always be false (they'd be removed
+            # first) and nested folders' output dirs would never be found.
+            if output_name in directory_names:
+                directories.add(Path(directory) / output_name)
             directory_names[:] = [
                 name
                 for name in directory_names
                 if name != output_name and not name.startswith(".")
             ]
-            if output_name in directory_names:
-                directories.add(Path(directory) / output_name)
-                directory_names.remove(output_name)
     return sorted(directories)
 
 
@@ -735,8 +738,13 @@ def orphan_groups(
         for cache in sorted(output_directory.glob("*.cache.json")):
             try:
                 payload = json.loads(cache.read_text(encoding="utf-8"))
-                source_value = payload["key"]["source"]["path"]
-                source = Path(str(source_value))
+                source_block = payload["key"]["source"]
+                if not isinstance(source_block, dict):
+                    raise KeyError("source is not an object")
+                source = Path(str(source_block["path"]))
+                fingerprint = source_block.get("fingerprint")
+                if not isinstance(fingerprint, str) or not fingerprint:
+                    fingerprint = None
                 if not source.is_absolute():
                     source = (cache.parent / source).resolve()
             except (KeyError, OSError, TypeError, json.JSONDecodeError) as error:
@@ -764,27 +772,90 @@ def orphan_groups(
                     total_size += artifact.lstat().st_size
                 except OSError:
                     pass
-            groups.append(OrphanGroup(source, cache, artifacts, total_size))
+            groups.append(OrphanGroup(source, cache, artifacts, total_size, fingerprint))
     return groups, warnings
+
+
+def live_fingerprint_sets(
+    roots: list[Path], recursive: bool, output_name: str
+) -> tuple[set[str], set[str]]:
+    """Return (all_live, with_cache) fingerprint sets for existing videos.
+
+    all_live: every fingerprint among currently-existing videos.
+    with_cache: the subset that already has its own local cache, so an
+    old-location orphan sharing one of these is redundant and safe to prune.
+    """
+    all_live: set[str] = set()
+    with_cache: set[str] = set()
+    for video in discover_videos(roots, recursive, output_name):
+        fingerprint = content_fingerprint(video)
+        if not fingerprint:
+            continue
+        all_live.add(fingerprint)
+        suffix = hashlib.sha256(os.fsencode(video.name)).hexdigest()[:10]
+        cache = video.parent / output_name / f"{video.stem}-{suffix}.cache.json"
+        if cache.is_file():
+            with_cache.add(fingerprint)
+    return all_live, with_cache
+
+
+def orphan_is_prunable(group: OrphanGroup, all_live: set[str], with_cache: set[str]) -> bool:
+    """True when a source-missing cache is safe to trash.
+
+    Preserved when the same content is still live somewhere but has no local
+    cache of its own yet (e.g. a video that moved and has not been re-scanned),
+    so we do not destroy its only adoptable source.
+    """
+    fingerprint = group.fingerprint
+    if not isinstance(fingerprint, str) or not fingerprint:
+        return True
+    if fingerprint in with_cache:
+        return True
+    if fingerprint in all_live:
+        return False
+    return True
+
+
+def partition_orphans(
+    groups: list[OrphanGroup], all_live: set[str], with_cache: set[str]
+) -> tuple[list[OrphanGroup], list[OrphanGroup]]:
+    prunable: list[OrphanGroup] = []
+    preserved: list[OrphanGroup] = []
+    for group in groups:
+        target = prunable if orphan_is_prunable(group, all_live, with_cache) else preserved
+        target.append(group)
+    return prunable, preserved
 
 
 def print_orphan_report(
     groups: list[OrphanGroup],
     warnings: list[tuple[Path, str]],
+    all_live: set[str] | None = None,
+    with_cache: set[str] | None = None,
 ) -> None:
-    artifact_count = sum(len(group.artifacts) for group in groups)
-    total_size = sum(group.total_size for group in groups)
-    if groups:
+    all_live = all_live if all_live is not None else set()
+    with_cache = with_cache if with_cache is not None else set()
+    prunable, preserved = partition_orphans(groups, all_live, with_cache)
+    artifact_count = sum(len(group.artifacts) for group in prunable)
+    total_size = sum(group.total_size for group in prunable)
+    if prunable:
         print(
-            f"Found {len(groups)} orphaned video cache group(s): "
+            f"Found {len(prunable)} orphaned cache group(s) safe to prune: "
             f"{artifact_count} artifact(s), {format_size(total_size)}"
         )
-        for group in groups:
+        for group in prunable:
             print(f"  missing source: {group.source}")
             for artifact in group.artifacts:
                 print(f"    {artifact}")
     else:
-        print("No orphaned thumbnail artifacts found.")
+        print("No orphaned thumbnail artifacts safe to prune.")
+    if preserved:
+        print(
+            f"Preserved {len(preserved)} orphaned group(s): same content is still "
+            f"live (a video with the same fingerprint exists) but has no local cache yet."
+        )
+        for group in preserved:
+            print(f"  missing source: {group.source}")
     if warnings:
         print(f"Skipped {len(warnings)} cache file(s) that could not be verified:")
         for cache, detail in warnings:
@@ -1119,7 +1190,21 @@ body.flat #flatGrid { display: grid; grid-template-columns: repeat(auto-fill, mi
           background: #111; border-bottom: 1px solid #333; }
 #lbTitle { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .9rem; }
 #lbCount { color: #aaa; font-size: .8rem; }
-#lbVideo { flex: 1; width: 100%; background: #000; align-items: center; }
+#lbVideo { flex: 1 1 auto; min-height: 0; width: 100%; background: #000; cursor: pointer; }
+#lbVideo:fullscreen { flex: none; width: 100%; height: 100%; }
+#lbControls { display: flex; align-items: center; gap: 6px; flex: none; padding: 6px 14px;
+  background: #111; border-top: 1px solid #333; transition: opacity .2s ease; }
+#lbControls.hidden-bar { opacity: 0; pointer-events: none; }
+#lbControls button { padding: 5px 10px; font-size: .82rem; }
+#lbControls .scrub { flex: 1; display: flex; align-items: center; height: 24px; margin: 0 4px; }
+#lbControls .scrub .track { position: relative; flex: 1; height: 5px; border-radius: 3px;
+  background: #444; cursor: pointer; }
+#lbControls .scrub .track:hover { background: #555; }
+#lbControls .scrub .fill { position: absolute; top: 0; bottom: 0; width: 0; border-radius: 3px;
+  background: #65c466; }
+#lbControls .scrub .knob { position: absolute; top: 50%; width: 13px; height: 13px;
+  border-radius: 50%; background: #fff; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px #0006;
+  pointer-events: none; }
 [hidden] { display: none !important; }
 @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
 #editModal { position:fixed; inset:0; z-index:100; background:#000c; display:flex; align-items:center; justify-content:center; }
@@ -1157,7 +1242,17 @@ document.addEventListener('DOMContentLoaded', () => {
     '<span id="lbTitle"></span><span id="lbCount"></span>' +
     '<button id="lbNext" type="button" title="Next (→)">›</button>' +
     '<button id="lbClose" type="button" title="Close (Esc)">✕</button></div>' +
-    '<video id="lbVideo" controls playsinline></video>';
+    '<video id="lbVideo" playsinline></video>' +
+    '<div id="lbControls">' +
+    '<button id="lbPlay" type="button" title="Play / Pause (Space)">▶</button>' +
+    '<button id="lbPrev10" type="button" title="Back 10s (Shift+←)">⏪</button>' +
+    '<button id="lbNext10" type="button" title="Forward 10s (Shift+→)">⏩</button>' +
+    '<span id="lbTime" class="time">0:00 / 0:00</span>' +
+    '<div class="scrub" title="Seek"><div class="track" id="lbScrub"><div class="fill"></div><div class="knob"></div></div></div>' +
+    '<select id="lbSpeed" title="Playback speed (, / .)"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select>' +
+    '<button id="lbPip" type="button" title="Picture-in-Picture (P)">PiP</button>' +
+    '<button id="lbFull" type="button" title="Fullscreen (F / double-click)">⛶</button>' +
+    '</div>';
   document.body.append(lightbox);
   const lbVideo = lightbox.querySelector('#lbVideo');
   const lbTitle = lightbox.querySelector('#lbTitle');
@@ -1266,10 +1361,122 @@ document.addEventListener('DOMContentLoaded', () => {
     const video = figure.querySelector('video');
     return fileMode ? video.dataset.videoUri : `/media/${video.dataset.assetId}/video`;
   };
+  const lbControls = lightbox.querySelector('#lbControls');
+  const lbPlay = lightbox.querySelector('#lbPlay');
+  const lbTime = lightbox.querySelector('#lbTime');
+  const lbScrub = lightbox.querySelector('#lbScrub');
+  const lbFill = lbScrub.querySelector('.fill');
+  const lbKnob = lbScrub.querySelector('.knob');
+  const lbSpeed = lightbox.querySelector('#lbSpeed');
+  const lbPip = lightbox.querySelector('#lbPip');
+  const lbFull = lightbox.querySelector('#lbFull');
+  let scrubbing = false;
+  let hideTimer = null;
+
+  const fmtTime = seconds => {
+    if (!isFinite(seconds) || seconds < 0) return '0:00';
+    seconds = Math.floor(seconds);
+    const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
+    return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+  };
+  const rememberPosition = () => {
+    const id = lbVideo.dataset.assetId;
+    if (!id) return;
+    const dur = lbVideo.duration;
+    if (!dur || lbVideo.currentTime < 2 || lbVideo.currentTime > dur - 2) return;
+    try { localStorage.setItem('th-ppos-' + id, String(lbVideo.currentTime)); } catch (_) {}
+  };
+  const setPlayIcon = () => { lbPlay.textContent = lbVideo.paused ? '▶' : '⏸'; };
+  const updateProgress = () => {
+    const dur = lbVideo.duration || 0, t = lbVideo.currentTime || 0;
+    const frac = dur ? t / dur : 0;
+    if (!scrubbing) { lbFill.style.width = (frac * 100) + '%'; lbKnob.style.left = (frac * 100) + '%'; }
+    lbTime.textContent = `${fmtTime(t)} / ${fmtTime(dur)}`;
+  };
+  const togglePlay = () => {
+    if (lbVideo.paused) { lbVideo.play().catch(() => {}); } else { lbVideo.pause(); }
+  };
+  const seekTo = frac => {
+    const dur = lbVideo.duration;
+    if (!dur) return;
+    lbVideo.currentTime = Math.max(0, Math.min(dur - 0.05, frac * dur));
+  };
+  const scrubFrac = clientX => {
+    const rect = lbScrub.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  };
+  const setRate = value => {
+    const rate = Math.max(0.25, Math.min(3, Number(value)));
+    lbVideo.playbackRate = rate;
+    lbSpeed.value = rate;
+    try { localStorage.setItem('thumbnail-gallery-rate', String(rate)); } catch (_) {}
+  };
+  const toggleFull = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else lbVideo.requestFullscreen().catch(() => {});
+  };
+  const togglePip = () => {
+    try {
+      if (document.pictureInPictureElement) document.exitPictureInPicture();
+      else lbVideo.requestPictureInPicture();
+    } catch (_) {}
+  };
+  const bumpRate = direction => {
+    const rates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
+    let idx = rates.indexOf(lbVideo.playbackRate);
+    if (idx < 0) idx = rates.indexOf(1);
+    setRate(rates[Math.max(0, Math.min(rates.length - 1, idx + direction))]);
+  };
+
+  // Wire control buttons.
+  lbPlay.addEventListener('click', togglePlay);
+  lightbox.querySelector('#lbPrev10').addEventListener('click', () => { lbVideo.currentTime = Math.max(0, lbVideo.currentTime - 10); });
+  lightbox.querySelector('#lbNext10').addEventListener('click', () => {
+    const dur = lbVideo.duration || 0;
+    lbVideo.currentTime = Math.min(dur ? dur - 0.05 : lbVideo.currentTime + 10, lbVideo.currentTime + 10);
+  });
+  lbSpeed.addEventListener('change', () => setRate(lbSpeed.value));
+  lbPip.addEventListener('click', togglePip);
+  lbFull.addEventListener('click', toggleFull);
+  lbVideo.addEventListener('dblclick', toggleFull);
+  lbScrub.addEventListener('pointerdown', event => {
+    scrubbing = true;
+    lbScrub.setPointerCapture(event.pointerId);
+    seekTo(scrubFrac(event.clientX));
+  });
+  lbScrub.addEventListener('pointermove', event => { if (scrubbing) seekTo(scrubFrac(event.clientX)); });
+  const endScrub = () => { scrubbing = false; };
+  lbScrub.addEventListener('pointerup', endScrub);
+  lbScrub.addEventListener('pointercancel', endScrub);
+
+  // Show the control bar, then auto-hide while playing.
+  const showControls = () => {
+    lbControls.classList.remove('hidden-bar');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      if (!lightbox.hidden && !lbVideo.paused && !scrubbing) lbControls.classList.add('hidden-bar');
+    }, 2500);
+  };
+  [lbVideo, lbControls].forEach(el => el.addEventListener('mousemove', showControls));
+  lbControls.addEventListener('mouseenter', () => { clearTimeout(hideTimer); lbControls.classList.remove('hidden-bar'); });
+  lbControls.addEventListener('mouseleave', showControls);
+
+  // Video event plumbing.
+  lbVideo.addEventListener('play', () => { setPlayIcon(); showControls(); });
+  lbVideo.addEventListener('pause', () => { setPlayIcon(); rememberPosition(); lbControls.classList.remove('hidden-bar'); });
+  lbVideo.addEventListener('seeked', updateProgress);
+  lbVideo.addEventListener('timeupdate', updateProgress);
+  lbVideo.addEventListener('durationchange', updateProgress);
+  lbVideo.addEventListener('ended', rememberPosition);
+  lbVideo.addEventListener('error', () => { lbTime.textContent = '⚠ cannot play this video'; });
+  document.addEventListener('fullscreenchange', () => { lbFull.textContent = document.fullscreenElement ? '⤢' : '⛶'; });
+
   const closeLightbox = () => {
     lightbox.hidden = true;
     lightboxIndex = -1;
     lbVideo.pause();
+    rememberPosition();
+    if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {});
     lbVideo.removeAttribute('src');
     lbVideo.load();
   };
@@ -1277,10 +1484,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const video = figure.querySelector('video');
     const visible = visibleFigures();
     lightboxIndex = Math.max(0, visible.indexOf(figure));
+    lbVideo.dataset.assetId = video.dataset.assetId;
     lbVideo.src = lightboxSource(figure);
     lbTitle.textContent = video.dataset.name;
     lbCount.textContent = `${lightboxIndex + 1} / ${visible.length}`;
+    lbSpeed.value = lbVideo.playbackRate || 1;
+    // Restore last-played position if we had one for this asset.
+    let savedPos = null;
+    try { savedPos = parseFloat(localStorage.getItem('th-ppos-' + video.dataset.assetId)); } catch (_) {}
+    const onLoaded = () => {
+      updateProgress();
+      if (isFinite(savedPos) && savedPos > 1 && savedPos < (lbVideo.duration || 0) - 1) {
+        lbVideo.currentTime = savedPos;
+      }
+    };
+    lbVideo.addEventListener('loadedmetadata', onLoaded, { once: true });
     lightbox.hidden = false;
+    setPlayIcon();
+    showControls();
     lbVideo.play().catch(() => {});
   };
   const stepLightbox = direction => {
@@ -1308,8 +1529,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', event => {
     if (!lightbox.hidden) {
       if (event.key === 'Escape') closeLightbox();
+      else if (event.key === 'ArrowRight' && event.shiftKey) { event.preventDefault(); lbVideo.currentTime = Math.min(lbVideo.duration || lbVideo.currentTime + 10, lbVideo.currentTime + 10); }
+      else if (event.key === 'ArrowLeft' && event.shiftKey) { event.preventDefault(); lbVideo.currentTime = Math.max(0, lbVideo.currentTime - 10); }
       else if (event.key === 'ArrowRight') stepLightbox(1);
       else if (event.key === 'ArrowLeft') stepLightbox(-1);
+      else if (event.key === ' ' || event.code === 'Space') { event.preventDefault(); togglePlay(); }
+      else if (!isTyping(event) && (event.key === 'f' || event.key === 'F')) toggleFull();
+      else if (!isTyping(event) && (event.key === 'p' || event.key === 'P')) togglePip();
+      else if (!isTyping(event) && event.key === ',') bumpRate(-1);
+      else if (!isTyping(event) && event.key === '.') bumpRate(1);
       return;
     }
     if (isTyping(event)) return;
@@ -1906,7 +2134,12 @@ def parse_arguments() -> argparse.Namespace:
     orphan_actions.add_argument(
         "--prune-orphans",
         action="store_true",
-        help="Move orphaned generated artifacts to desktop trash and update the manifest",
+        help="Prune orphaned generated artifacts now (without a scan); also the default during scans",
+    )
+    parser.add_argument(
+        "--no-prune-orphans",
+        action="store_true",
+        help="Do not automatically prune orphaned artifacts during a scan (default: prune)",
     )
     parser.add_argument("--no-serve", action="store_true", help="Generate files without starting the server")
     return parser.parse_args()
@@ -1965,10 +2198,12 @@ def main() -> None:
         if args.prune_orphans and shutil.which("gio") is None:
             raise SystemExit("Missing required command: gio")
         groups, warnings = orphan_groups(roots, args.recursive, args.out_dir)
-        print_orphan_report(groups, warnings)
+        all_live, with_cache = live_fingerprint_sets(roots, args.recursive, args.out_dir)
+        print_orphan_report(groups, warnings, all_live, with_cache)
         if args.list_orphans:
             return
-        trashed, trash_failures = trash_orphan_groups(groups)
+        prunable, _preserved = partition_orphans(groups, all_live, with_cache)
+        trashed, trash_failures = trash_orphan_groups(prunable)
         print(f"Moved {trashed} orphaned artifact(s) to desktop trash.")
         removed_entries = 0
         for root in roots:
@@ -2122,6 +2357,33 @@ def main() -> None:
     apply_overrides(items, overrides)
     if applied:
         print(f"Restored {applied} saved name/tag override(s).")
+
+    # Auto-prune orphaned artifacts (safe subset only). The manifest is rebuilt
+    # from live items below, so dropped videos leave it on their own; this only
+    # removes the dead artifact files.
+    if not args.no_prune_orphans:
+        groups, warnings = orphan_groups(roots, args.recursive, args.out_dir)
+        if groups:
+            all_live, with_cache = live_fingerprint_sets(roots, args.recursive, args.out_dir)
+            prunable, preserved = partition_orphans(groups, all_live, with_cache)
+            if prunable:
+                trashed, trash_failures = trash_orphan_groups(prunable)
+                print(
+                    f"Pruned {trashed} orphaned artifact(s) to desktop trash "
+                    f"({len(prunable)} group(s))."
+                )
+            if preserved:
+                print(
+                    f"Kept {len(preserved)} orphan group(s) — same content is still live "
+                    f"and has no local cache yet."
+                )
+            if warnings:
+                print(f"Skipped {len(warnings)} unreadable cache file(s).")
+            if trash_failures:
+                print("Trash failures:")
+                for artifact, detail in trash_failures:
+                    print(f"  {artifact}: {detail}")
+                raise SystemExit(1)
 
     output_base = roots[0]
     manifest = output_base / f"{args.gallery_name}.json"

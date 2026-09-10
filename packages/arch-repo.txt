@@ -238,7 +238,6 @@ usbutils
 uv
 uwsm
 ventoy-bin
-vesktop
 vim
 vulkan-icd-loader
 vulkan-mesa-implicit-layers

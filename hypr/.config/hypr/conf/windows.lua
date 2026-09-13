@@ -1,5 +1,19 @@
 -- Windows and workspaces
 
+hl.window_rule({
+    name = "waydroid-float",
+    match = { class = "^[Ww]aydroid(\\..*)?$" },
+    float = true,
+})
+
+-- Portrait phone ratio (9:20). Reserve the 24px bar and two 2px borders.
+hl.window_rule({
+    name = "waydroid-full-height",
+    match = { class = "^[Ww]aydroid$" },
+    size = "635 1412",
+    center = true,
+})
+
 local floating_tools = {
     "^(blueman-manager)$",
     "^(com.github.wwmm.easyeffects)$",

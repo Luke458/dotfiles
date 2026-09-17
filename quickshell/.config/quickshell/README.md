@@ -7,6 +7,7 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 - **Hyprland integration:** Workspace tracking, window titles, layout indicator, and dispatch commands.
 - **Universal launcher:** Desktop entry search plus native password-store and power pickers.
 - **System monitoring:** CPU, memory, AMD GPU, disk usage, and focused detail popups.
+- **Tailscale:** bar indicator + flyout (connect toggle, exit-node selection, machine list, copy IP/DNS) backed by `services/Tailscale.qml`.
 - **Service-backed data:** Weather via Open-Meteo, BTC chart/price data via `services/Btc.qml`, Mullvad via `services/Mullvad.qml`, and audio via PipeWire.
 - **Interactivity:** Volume scroll/mute, Mullvad VPN controls, idle inhibition, system tray menus, notifications, media controls, lock screen, and power controls.
 
@@ -26,6 +27,8 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 │   ├── BtcDetails.qml        # BTC chart/details popup
 │   ├── MullvadIndicator.qml  # Bar VPN indicator backed by services/Mullvad.qml
 │   ├── MullvadDetails.qml    # Mullvad replacement popup
+│   ├── TailscaleIndicator.qml # Bar Tailscale indicator backed by services/Tailscale.qml
+│   ├── TailscaleDetails.qml  # Tailscale status, machines, and exit-node popup
 │   ├── AdvancedWeatherDetails.qml
 │   ├── ShellPopup.qml        # PopupWindow flyout container
 │   ├── Tray.qml / TrayMenu.qml
@@ -34,6 +37,7 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 │   ├── Btc.qml               # CoinGecko/Coinbase-backed BTC service
 │   ├── Weather.qml           # Open-Meteo weather service
 │   ├── Mullvad.qml           # mullvad-cli status, relay, and settings service
+│   ├── Tailscale.qml         # tailscale CLI status, toggle, and exit-node service
 │   ├── LayoutState.qml       # Shared Hyprland layout state and switching
 │   ├── Stats.qml             # /proc, /sys, lsblk, df, and ps-backed system stats
 │   ├── Volume.qml            # PipeWire volume/mixer service

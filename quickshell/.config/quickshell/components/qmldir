@@ -55,3 +55,6 @@ StyledSwitch StyledSwitch.qml
 StyledButton StyledButton.qml
 SectionHeading SectionHeading.qml
 Divider Divider.qml
+TailscaleMark TailscaleMark.qml
+TailscaleIndicator TailscaleIndicator.qml
+TailscaleDetails TailscaleDetails.qml

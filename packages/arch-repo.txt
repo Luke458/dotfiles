@@ -214,6 +214,7 @@ sof-firmware
 stow
 sudo
 sysfsutils
+tailscale
 telegram-desktop
 tesseract-data-eng
 texinfo

@@ -39,6 +39,7 @@ cava
 ccache
 chatgpt-desktop-bin
 chwd
+claude-code
 cli11
 clinfo
 cpupower

@@ -200,6 +200,7 @@ ripgrep
 rocm-core
 rocm-hip-sdk
 rocm-opencl-runtime
+rocprofiler
 rocwmma
 rsync
 rtkit

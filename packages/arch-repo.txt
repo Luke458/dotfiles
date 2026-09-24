@@ -136,6 +136,7 @@ meld
 memtester
 mesa
 mesa-utils
+mise
 mkinitcpio
 modemmanager
 mold

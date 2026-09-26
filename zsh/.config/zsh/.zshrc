@@ -91,6 +91,9 @@ if [ -d /usr/lib/qt6/bin ] && [[ ":$PATH:" != *":/usr/lib/qt6/bin:"* ]]; then
     export PATH="$PATH:/usr/lib/qt6/bin"
 fi
 
+# Activate mise-managed tools in interactive shells
+eval "$(mise activate zsh)"
+
 # --- Other program settings ---
 [ -x "$(command -v nvim)" ] && alias vim="nvim" vimdiff="nvim -d" # Use neovim for vim if present.
 eval "$(zoxide init zsh)"

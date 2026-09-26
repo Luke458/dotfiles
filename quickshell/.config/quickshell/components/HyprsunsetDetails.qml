@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import "." as Components
 
@@ -9,16 +8,16 @@ Item {
 
     implicitWidth: 250
     implicitHeight: layout.implicitHeight + 40
-    
+
     ColumnLayout {
         id: layout
         anchors.fill: parent
         anchors.margins: Theme.sectionPadding
         spacing: Theme.spacingXLarge
-        
+
         RowLayout {
             Layout.fillWidth: true
-            
+
             Text {
                 text: "HYPRSUNSET"
                 color: Theme.selFg
@@ -27,28 +26,29 @@ Item {
                 font.bold: true
                 Layout.fillWidth: true
             }
-            
+
             Components.StyledSwitch {
                 id: enabledSwitch
                 checked: root.hyprsunset.enabled
+                Accessible.name: "Night light"
                 onToggled: root.hyprsunset.setEnabled(!checked)
             }
         }
-        
+
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: 1
             color: Theme.border
             opacity: Theme.opacitySoft
         }
-        
+
         // Temperature Slider
         ColumnLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingSmall
             enabled: root.hyprsunset.enabled
             opacity: enabled ? 1.0 : 0.4
-            
+
             RowLayout {
                 Layout.fillWidth: true
                 Text {
@@ -66,49 +66,21 @@ Item {
                     font.bold: true
                 }
             }
-            
-            Slider {
+
+            StyledSlider {
                 id: tempSlider
+                Accessible.name: "Color temperature"
                 Layout.fillWidth: true
                 from: 1000
                 to: 10000
-                value: root.hyprsunset.temperature
+                Binding on value {
+                    restoreMode: Binding.RestoreNone
+                    value: root.hyprsunset.temperature
+                    when: !tempSlider.pressed
+                }
                 stepSize: 100
 
-                background: Rectangle {
-                    x: tempSlider.leftPadding
-                    y: tempSlider.topPadding + tempSlider.availableHeight / 2 - height / 2
-                    implicitWidth: 200
-                    implicitHeight: 4
-                    width: tempSlider.availableWidth
-                    height: implicitHeight
-                    radius: Theme.radiusSmall
-                    color: Theme.border
-                    opacity: Theme.opacitySoft
-
-                    Rectangle {
-                        width: tempSlider.visualPosition * parent.width
-                        height: parent.height
-                        color: Theme.selBg
-                        radius: Theme.radiusSmall
-                    }
-                }
-
-                handle: Rectangle {
-                    x: tempSlider.leftPadding + tempSlider.visualPosition * (tempSlider.availableWidth - width)
-                    y: tempSlider.topPadding + tempSlider.availableHeight / 2 - height / 2
-                    implicitWidth: 14
-                    implicitHeight: 14
-                    radius: Theme.radiusHandle
-                    color: Theme.selFg
-                }
-
-                // Commit on release: onMoved per step would spawn a hyprctl
-                // process up to ~10x/second during a drag.
-                onPressedChanged: {
-                    if (!pressed)
-                        root.hyprsunset.setTemperature(value)
-                }
+                onCommitted: newValue => root.hyprsunset.setTemperature(newValue)
             }
         }
 
@@ -118,7 +90,7 @@ Item {
             spacing: Theme.spacingSmall
             enabled: root.hyprsunset.enabled
             opacity: enabled ? 1.0 : 0.4
-            
+
             RowLayout {
                 Layout.fillWidth: true
                 Text {
@@ -136,51 +108,24 @@ Item {
                     font.bold: true
                 }
             }
-            
-            Slider {
+
+            StyledSlider {
                 id: gammaSlider
+                Accessible.name: "Gamma"
                 Layout.fillWidth: true
                 from: 10
                 to: 100
-                value: root.hyprsunset.gamma
+                Binding on value {
+                    restoreMode: Binding.RestoreNone
+                    value: root.hyprsunset.gamma
+                    when: !gammaSlider.pressed
+                }
                 stepSize: 1
 
-                background: Rectangle {
-                    x: gammaSlider.leftPadding
-                    y: gammaSlider.topPadding + gammaSlider.availableHeight / 2 - height / 2
-                    implicitWidth: 200
-                    implicitHeight: 4
-                    width: gammaSlider.availableWidth
-                    height: implicitHeight
-                    radius: Theme.radiusSmall
-                    color: Theme.border
-                    opacity: Theme.opacitySoft
-
-                    Rectangle {
-                        width: gammaSlider.visualPosition * parent.width
-                        height: parent.height
-                        color: Theme.selBg
-                        radius: Theme.radiusSmall
-                    }
-                }
-
-                handle: Rectangle {
-                    x: gammaSlider.leftPadding + gammaSlider.visualPosition * (gammaSlider.availableWidth - width)
-                    y: gammaSlider.topPadding + gammaSlider.availableHeight / 2 - height / 2
-                    implicitWidth: 14
-                    implicitHeight: 14
-                    radius: Theme.radiusHandle
-                    color: Theme.selFg
-                }
-
-                // Commit on release (see temperature slider).
-                onPressedChanged: {
-                    if (!pressed)
-                        root.hyprsunset.setGamma(value)
-                }
+                onCommitted: newValue => root.hyprsunset.setGamma(newValue)
             }
         }
-        
+
         Components.StyledButton {
             id: resetBtn
             text: "RESET"

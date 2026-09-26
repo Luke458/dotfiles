@@ -12,8 +12,8 @@ Item {
     readonly property color accent: {
         if (Weather.weatherCode === 0) return Theme.weatherClear;
         if (Weather.weatherCode >= 45 && Weather.weatherCode <= 48) return Theme.weatherFog;
+        if ((Weather.weatherCode >= 71 && Weather.weatherCode <= 77) || Weather.weatherCode === 85 || Weather.weatherCode === 86) return Theme.weatherSnow;
         if (Weather.weatherCode >= 51 && Weather.weatherCode <= 82) return Theme.weatherRain;
-        if (Weather.weatherCode >= 71 && Weather.weatherCode <= 86) return Theme.weatherSnow;
         if (Weather.weatherCode >= 95) return Theme.yellow;
         return Theme.selBg;
     }
@@ -35,12 +35,7 @@ Item {
         font.family: Theme.fontMono
     }
 
-    component SectionHeading: WeatherText {
-        color: Theme.selFg
-        font.pixelSize: Theme.fontSizeLabel
-        font.bold: true
-        Layout.fillWidth: true
-    }
+
 
     component MetricTile: WeatherTile {
         id: metricTile
@@ -415,6 +410,7 @@ Item {
             }
 
             SectionHeading {
+                Layout.fillWidth: true
                 text: "NEXT HOURS"
             }
 
@@ -439,6 +435,7 @@ Item {
             }
 
             SectionHeading {
+                Layout.fillWidth: true
                 text: "7 DAY FORECAST"
             }
 
@@ -472,6 +469,7 @@ Item {
 
     ColumnLayout {
         anchors.centerIn: parent
+        width: parent.width - Theme.sectionPadding * 2
         spacing: Theme.spacingMedium
         visible: Weather.loading || Weather.error !== ""
 
@@ -483,10 +481,20 @@ Item {
 
         WeatherText {
             text: Weather.error
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
             color: Theme.red
             font.pixelSize: Theme.fontSizeLabel
             visible: Weather.error !== ""
             Layout.alignment: Qt.AlignHCenter
+        }
+        StyledButton {
+            text: "RETRY"
+            visible: Weather.error !== ""
+            enabled: !Weather.loading
+            bordered: true
+            Layout.alignment: Qt.AlignHCenter
+            onClicked: Weather.fetchWeather()
         }
     }
 }

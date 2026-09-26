@@ -47,9 +47,25 @@ Rectangle {
     height: implicitHeight
     
     color: Theme.bgSolid
-    border.color: (cardClickArea.containsMouse && (root.canActivate || root.canExpand)) ? Theme.selBg : Theme.border
+    border.color: (activeFocus || (cardClickArea.containsMouse && (root.canActivate || root.canExpand))) ? Theme.selBg : Theme.border
     border.width: 1
     radius: Theme.radiusNone
+
+    activeFocusOnTab: true
+    Accessible.role: Accessible.Button
+    Accessible.name: summary
+    function activateCard() {
+        if (canActivate && Notifications.activateByTrackingId(trackingId))
+            return;
+        if (canExpand) expanded = !expanded;
+    }
+    function dismissCard() {
+        if (trackingId !== "") Notifications.dismissByTrackingId(trackingId);
+        else Notifications.dismiss(notification);
+    }
+    Keys.onReturnPressed: activateCard()
+    Keys.onSpacePressed: if (canExpand) expanded = !expanded
+    Keys.onDeletePressed: dismissCard()
 
     // Handle clicks and hovers for activating the notification
     MouseArea {

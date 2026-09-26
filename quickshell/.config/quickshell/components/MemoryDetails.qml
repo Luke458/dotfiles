@@ -27,7 +27,7 @@ Item {
             spacing: Theme.spacingLarge
 
             Text {
-                text: "Top Memory Hogs"
+                text: "MEMORY · " + Stats.memUsage + "% USED"
                 color: Theme.selFg
                 font.pixelSize: Theme.fontSizeHeading
                 font.family: Theme.fontMono
@@ -74,12 +74,11 @@ Item {
                         implicitHeight: 6
                         color: Theme.border
                         radius: Theme.radiusCompact
-                        opacity: Theme.opacityMuted
+
                         
                         Rectangle {
-                            // Max memory usage in top 10 is usually the first one
-                            // but we'll scale relative to 10% for better visual consistency
-                            width: Math.min(parent.width, (memoryHog.usage / 10) * parent.width)
+                            // Show the same percentage as the adjacent label.
+                            width: Math.max(0, Math.min(1, memoryHog.usage / 100)) * parent.width
                             height: parent.height
                             radius: Theme.radiusCompact
                             color: memoryHog.usage > 5 ? Theme.critical : Theme.selBg

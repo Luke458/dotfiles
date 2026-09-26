@@ -28,7 +28,7 @@ Item {
             spacing: Theme.spacingXLarge
 
             Text {
-                text: "Disk Usage"
+                text: "DISK USAGE"
                 color: Theme.selFg
                 font.pixelSize: Theme.fontSizeHeading
                 font.family: Theme.fontMono
@@ -58,6 +58,8 @@ Item {
 
                         Text {
                             text: driveDelegate.modelData.name.toUpperCase() + " (" + driveDelegate.modelData.size + ")"
+                            wrapMode: Text.Wrap
+                            textFormat: Text.PlainText
                             color: Theme.selFg
                             font.family: Theme.fontMono
                             font.bold: true
@@ -80,6 +82,8 @@ Item {
                                 Layout.fillWidth: true
                                 Text { 
                                     text: partitionDelegate.modelData.mount
+                                    elide: Text.ElideMiddle
+                                    textFormat: Text.PlainText
                                     color: Theme.fg
                                     font.family: Theme.fontMono
                                     font.pixelSize: Theme.fontSizeLabel
@@ -100,7 +104,7 @@ Item {
                                 implicitHeight: 8
                                 color: Theme.border
                                 radius: Theme.radiusMedium
-                                opacity: Theme.opacityMuted
+
                                 
                                 // Progress Indicator
                                 Rectangle {
@@ -108,7 +112,7 @@ Item {
                                     anchors.left: parent.left
                                     anchors.top: parent.top
                                     anchors.bottom: parent.bottom
-                                    width: Math.max(radius * 2, (partitionDelegate.modelData.percent / 100) * parent.width)
+                                    width: Math.max(0, Math.min(1, partitionDelegate.modelData.percent / 100)) * parent.width
                                     radius: Theme.radiusMedium
                                     color: partitionDelegate.modelData.percent > 90 ? Theme.critical : Theme.selBg
                                     

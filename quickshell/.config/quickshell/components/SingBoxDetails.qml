@@ -105,31 +105,14 @@ Item {
                     }
                 }
 
-                MouseArea {
+                StyledButton {
                     id: refreshButton
-                    implicitWidth: refreshIcon.implicitWidth + Theme.controlPadding
-                    implicitHeight: 28
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    iconText: "\uf021"
+                    Accessible.name: "Refresh"
+                    fixedWidth: 30
+                    bordered: true
                     enabled: !Services.SingBox.loading && !Services.SingBox.busy
                     onClicked: Services.SingBox.refresh()
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color: refreshButton.containsMouse ? Theme.hover : Theme.transparent
-                        border.color: Theme.border
-                        border.width: 1
-                        radius: Theme.radiusMedium
-                    }
-
-                    Text {
-                        id: refreshIcon
-                        anchors.centerIn: parent
-                        text: Services.SingBox.loading ? "…" : "\u{f0450}"
-                        color: refreshButton.enabled ? Theme.fg : Theme.placeholderFg
-                        font.family: Services.SingBox.loading ? Theme.fontMono : Theme.fontIcon
-                        font.pixelSize: Theme.fontSizeTitle
-                    }
                 }
             }
 
@@ -158,38 +141,15 @@ Item {
                     Repeater {
                         model: Services.SingBox.routes
 
-                        delegate: MouseArea {
-                            id: routeChoice
-                            required property var modelData
-                            implicitWidth: routeChoiceLabel.implicitWidth + Theme.sectionPadding
-                            implicitHeight: 28
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
+                        delegate: StyledButton {
+                        id: routeChoice
+                        bordered: true
+                        required property var modelData
+                            text: Services.SingBox.routeLabel(modelData.name)
+                            selected: root.selectedRoute === modelData.name
                             enabled: !Services.SingBox.busy
                             onClicked: root.selectedRoute = modelData.name
-
-                            Rectangle {
-                                anchors.fill: parent
-                                color: root.selectedRoute === routeChoice.modelData.name
-                                    ? Theme.selectionMedium
-                                    : (routeChoice.containsMouse ? Theme.hover : Theme.surfaceSubtle)
-                                border.color: root.selectedRoute === routeChoice.modelData.name
-                                    ? Theme.selBg : Theme.border
-                                border.width: 1
-                                radius: Theme.radiusMedium
-                            }
-
-                            Text {
-                                id: routeChoiceLabel
-                                anchors.centerIn: parent
-                                text: Services.SingBox.routeLabel(routeChoice.modelData.name)
-                                color: root.selectedRoute === routeChoice.modelData.name
-                                    ? Theme.selFg : Theme.fg
-                                font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeSmall
-                                font.bold: root.selectedRoute === routeChoice.modelData.name
-                            }
-                        }
+                    }
                     }
                 }
 
@@ -197,56 +157,23 @@ Item {
                     width: parent.width
                     spacing: Theme.spacingComfortable
 
-                    TextField {
+                    StyledTextField {
                         id: entryField
                         Layout.fillWidth: true
-                        implicitHeight: 32
+
                         enabled: !Services.SingBox.busy
                         placeholderText: "example.com or https://example.com/path"
-                        color: Theme.selFg
-                        placeholderTextColor: Theme.placeholderFg
-                        selectionColor: Theme.selBg
-                        selectedTextColor: Theme.selFg
-                        font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeBody
-                        leftPadding: Theme.controlPadding
-                        rightPadding: Theme.controlPadding
+
                         onAccepted: root.addCurrentEntry()
 
-                        background: Rectangle {
-                            color: Theme.fieldBg
-                            border.color: entryField.activeFocus ? Theme.selBg : Theme.border
-                            border.width: 1
-                            radius: Theme.radiusMedium
-                        }
                     }
 
-                    MouseArea {
+                    StyledButton {
                         id: addButton
-                        implicitWidth: addLabel.implicitWidth + Theme.sectionPadding
-                        implicitHeight: 32
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
+                        bordered: true
+                        text: Services.SingBox.busy ? "WORKING…" : "ADD"
                         enabled: !Services.SingBox.busy && entryField.text.trim().length > 0
                         onClicked: root.addCurrentEntry()
-
-                        Rectangle {
-                            anchors.fill: parent
-                            color: addButton.containsMouse && addButton.enabled ? Theme.hover : Theme.surfaceSubtle
-                            border.color: addButton.enabled ? Theme.selBg : Theme.border
-                            border.width: 1
-                            radius: Theme.radiusMedium
-                        }
-
-                        Text {
-                            id: addLabel
-                            anchors.centerIn: parent
-                            text: Services.SingBox.busy ? "WORKING…" : "ADD"
-                            color: addButton.enabled ? Theme.selFg : Theme.placeholderFg
-                            font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.bold: true
-                        }
                     }
                 }
 
@@ -375,31 +302,15 @@ Item {
                                             font.pixelSize: Theme.fontSizeCaption
                                         }
 
-                                        MouseArea {
-                                            id: removeButton
-                                            implicitWidth: 26
-                                            implicitHeight: 26
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
+                                        StyledButton {
+                        id: removeButton
+                        bordered: true
+                        text: "×"
+                                            fixedWidth: 30
+                                            Accessible.name: "Remove " + entryRow.modelData.line
                                             enabled: !Services.SingBox.busy
-                                            onClicked: Services.SingBox.removeEntry(
-                                                routeCard.modelData.name,
-                                                entryRow.modelData.line)
-
-                                            Rectangle {
-                                                anchors.fill: parent
-                                                color: removeButton.containsMouse ? Theme.negativeSurface : Theme.transparent
-                                                radius: Theme.radiusMedium
-                                            }
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "×"
-                                                color: removeButton.containsMouse ? Theme.negative : Theme.fg
-                                                font.family: Theme.fontMono
-                                                font.pixelSize: Theme.fontSizeTitle
-                                            }
-                                        }
+                                            onClicked: Services.SingBox.removeEntry(routeCard.modelData.name, entryRow.modelData.line)
+                    }
                                     }
                                 }
                             }
@@ -448,33 +359,13 @@ Item {
                     }
                 }
 
-                MouseArea {
-                    id: applyButton
-                    implicitWidth: applyLabel.implicitWidth + Theme.sectionPadding
-                    implicitHeight: 30
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                StyledButton {
+                        id: applyButton
+                        bordered: true
+                        text: Services.SingBox.busy ? Services.SingBox.actionName.toUpperCase() : "VALIDATE & APPLY"
                     enabled: !Services.SingBox.busy
                     onClicked: Services.SingBox.validateAndApply()
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color: applyButton.containsMouse ? Theme.hover : Theme.surfaceSubtle
-                        border.color: Theme.border
-                        border.width: 1
-                        radius: Theme.radiusMedium
                     }
-
-                    Text {
-                        id: applyLabel
-                        anchors.centerIn: parent
-                        text: Services.SingBox.busy ? Services.SingBox.actionName.toUpperCase() : "VALIDATE & APPLY"
-                        color: applyButton.enabled ? Theme.selFg : Theme.placeholderFg
-                        font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.bold: true
-                    }
-                }
             }
 
             Text {

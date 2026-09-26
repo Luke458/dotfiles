@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import "../services"
 
@@ -27,8 +26,8 @@ Item {
     }
 
     implicitWidth: 350
-    implicitHeight: mainLayout.implicitHeight + 40
-    
+    implicitHeight: Media.hasMedia ? mainLayout.implicitHeight + Theme.sectionPadding * 2 : 80
+
     ColumnLayout {
         id: mainLayout
         anchors.centerIn: parent
@@ -40,14 +39,14 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingXLarge
-            
+
             Rectangle {
                 Layout.preferredWidth: 80
                 Layout.preferredHeight: 80
                 radius: Theme.radiusMedium
                 color: Theme.border
                 clip: true
-                
+
                 Image {
                     anchors.fill: parent
                     source: Media.albumArtUrl || "image://icon/media-optical"
@@ -58,7 +57,7 @@ Item {
                     sourceSize.height: 160
                 }
             }
-            
+
             ColumnLayout {
                 spacing: Theme.spacingXSmall
                 Layout.fillWidth: true
@@ -105,7 +104,7 @@ Item {
                         // Expand / Collapse indicator
                         Text {
                             text: root.titleExpanded ? "Collapse ▲" : "Expand ▼"
-                            color: Theme.selBg
+                            color: Theme.fg
                             font.pixelSize: Theme.fontSizeSmall
                             font.family: Theme.fontMono
                             font.bold: true
@@ -151,8 +150,8 @@ Item {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingSmall
-            
-            Slider {
+
+            StyledSlider {
                 id: progressSlider
                 Layout.fillWidth: true
                 from: 0
@@ -161,60 +160,30 @@ Item {
                 // onMoved fires a D-Bus seek per pixel; only follow playback
                 // while not pressed and commit the seek on release.
                 Binding on value {
+                    restoreMode: Binding.RestoreNone
                     value: (Media.trackLength > 0) ? (Media.currentPosition * 1e6 / Media.trackLength) : 0
                     when: !progressSlider.pressed
                 }
 
-                background: Rectangle {
-                    x: progressSlider.leftPadding
-                    y: progressSlider.topPadding + progressSlider.availableHeight / 2 - height / 2
-                    implicitWidth: 200
-                    implicitHeight: 4
-                    width: progressSlider.availableWidth
-                    height: implicitHeight
-                    radius: Theme.radiusSmall
-                    color: Theme.border
-                    opacity: Theme.opacitySoft
+                enabled: Media.canSeek && Media.trackLength > 0
+                stepSize: Media.trackLength > 0 ? Math.min(1, 5e6 / Media.trackLength) : 0.01
+                Accessible.name: "Playback position"
 
-                    Rectangle {
-                        width: progressSlider.visualPosition * parent.width
-                        height: parent.height
-                        color: Theme.selBg
-                        radius: Theme.radiusSmall
-                    }
-                }
-
-                handle: Rectangle {
-                    x: progressSlider.leftPadding + progressSlider.visualPosition * (progressSlider.availableWidth - width)
-                    y: progressSlider.topPadding + progressSlider.availableHeight / 2 - height / 2
-                    implicitWidth: 10
-                    implicitHeight: 10
-                    radius: Theme.radiusComfortable
-                    color: Theme.selFg
-                    visible: progressSlider.hovered || progressSlider.pressed
-                }
-
-                property real seekPreview: 0
-                onMoved: seekPreview = value
-
-                onPressedChanged: {
-                    if (!pressed && Media.trackLength > 0)
-                        Media.seek(seekPreview)
-                }
+                onCommitted: newValue => Media.seek(newValue)
             }
-            
+
             RowLayout {
                 Layout.fillWidth: true
-                
+
                 Text {
                     text: root.formatTime(Media.currentPosition)
                     color: Theme.fg
                     font.pixelSize: Theme.fontSizeSmall
                     font.family: Theme.fontMono
                 }
-                
+
                 Item { Layout.fillWidth: true }
-                
+
                 Text {
                     text: root.formatTime(Media.trackLength / 1e6)
                     color: Theme.fg
@@ -231,6 +200,7 @@ Item {
 
             StyledButton {
                 id: prevBtn
+                Accessible.name: "Previous track"
                 fixedWidth: 40
                 enabled: Media.canGoPrevious
                 iconText: "\uf04a"
@@ -239,6 +209,8 @@ Item {
 
             StyledButton {
                 id: playBtn
+                Accessible.name: Media.playbackState === 1 ? "Pause" : "Play"
+                enabled: Media.playbackState === 1 ? Media.canPause : Media.canPlay
                 fixedWidth: 48
                 selected: Media.playbackState === 1
                 iconText: Media.playbackState === 1 ? "\uf04c" : "\uf04b"
@@ -247,6 +219,7 @@ Item {
 
             StyledButton {
                 id: nextBtn
+                Accessible.name: "Next track"
                 fixedWidth: 40
                 enabled: Media.canGoNext
                 iconText: "\uf051"

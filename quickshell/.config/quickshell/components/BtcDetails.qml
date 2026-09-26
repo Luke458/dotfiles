@@ -21,6 +21,8 @@ Item {
         return "A$" + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
     }
 
+    onChartColorChanged: chart.requestPaint()
+
     // Repaint chart whenever the service's cached prices update
     Connections {
         target: Btc
@@ -172,6 +174,8 @@ Item {
                 id: chart
                 anchors { fill: parent; margins: 8 }
 
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
                 onPaint: {
                     var ctx = getContext("2d")
                     ctx.clearRect(0, 0, width, height)
@@ -246,31 +250,21 @@ Item {
         // ── Footer ────────────────────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            visible: Btc.lastUpdated !== ""
+
 
             Text {
-                text: "via CoinGecko · " + (Btc.stale ? "cached " : "updated ") + Btc.lastUpdated
+                text: Btc.lastUpdated ? "via CoinGecko · " + (Btc.stale ? "cached " : "updated ") + Btc.lastUpdated : "Price data unavailable"
                 color: Theme.fg; font.pixelSize: Theme.fontSizeCaption; font.family: Theme.fontMono; opacity: Theme.opacitySubtle
             }
 
             Item { Layout.fillWidth: true }
 
-            MouseArea {
-                implicitWidth:  refreshIcon.implicitWidth + 8
-                implicitHeight: refreshIcon.implicitHeight
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
+            StyledButton {
+                iconText: "\uf021"
+                fixedWidth: 30
+                Accessible.name: "Refresh Bitcoin price"
+                enabled: !Btc.fetchProc.running
                 onClicked: Btc.refresh()
-
-                Text {
-                    id: refreshIcon
-                    anchors.centerIn: parent
-                    text: "↻"
-                    color: Theme.selBg
-                    font.pixelSize: Theme.fontSizeTitle; font.family: Theme.fontMono
-                    opacity: parent.containsMouse ? 1.0 : 0.5
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
-                }
             }
         }
     }

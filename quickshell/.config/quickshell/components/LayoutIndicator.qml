@@ -12,6 +12,8 @@ MouseArea {
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
 
+    Rectangle { anchors.fill: parent; color: Theme.selBg; visible: root.containsMouse }
+
     Text {
         id: label
 
@@ -22,7 +24,7 @@ MouseArea {
             if (root.currentLayout === "scrolling") return "[>>]"
             return "><>"
         }
-        color: root.containsMouse ? Components.Theme.selBg : Components.Theme.fg
+        color: root.containsMouse ? Components.Theme.selFg : Components.Theme.fg
         font.pixelSize: Theme.fontSizeBar
         font.family: Theme.fontMono
     }

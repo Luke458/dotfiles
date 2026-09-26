@@ -78,6 +78,9 @@ MouseArea {
 
         Text {
             text: root.label
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
+            Layout.maximumWidth: 180
             color: root.containsMouse ? Components.Theme.selFg : Components.Theme.fg
             font.pixelSize: Theme.fontSizeLabel
             font.family: Theme.fontMono

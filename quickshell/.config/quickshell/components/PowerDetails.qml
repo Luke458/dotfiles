@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 import Quickshell.Widgets
 import "../services"
 
@@ -29,17 +28,15 @@ Item {
                 { label: "LOGOUT", icon: "system-log-out", action: () => Power.logout() }
             ]
 
-            delegate: Button {
+            delegate: StyledButton {
                 id: btn
                 required property var modelData
                 Layout.fillWidth: true
-                flat: true
+                text: modelData.label
+                Accessible.name: text
+                bordered: true
                 
-                background: Rectangle {
-                    implicitHeight: 40
-                    radius: Theme.radiusMedium
-                    color: btn.hovered ? Theme.hover : Theme.transparent
-                }
+
                 
                 contentItem: RowLayout {
                     spacing: Theme.spacingLarge
@@ -58,8 +55,9 @@ Item {
                 }
 
                 onClicked: {
+                    const action = btn.modelData.action;
+                    action();
                     root.requestClose();
-                    btn.modelData.action();
                 }
             }
         }

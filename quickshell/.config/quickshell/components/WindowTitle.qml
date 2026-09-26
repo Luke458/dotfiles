@@ -19,6 +19,7 @@ Rectangle {
         color: Theme.selFg
         font.pixelSize: Theme.fontSizeBar
         font.family: Theme.fontMono
+        textFormat: Text.PlainText
         elide: Text.ElideRight
         maximumLineCount: 1
         verticalAlignment: Text.AlignVCenter

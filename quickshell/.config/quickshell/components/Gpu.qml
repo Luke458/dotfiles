@@ -25,7 +25,7 @@ Item {
         }
 
         Text {
-            text: Stats.gpuUsage + "%"
+            text: Stats.gpuAvailable && Stats.gpuUsage >= 0 ? Stats.gpuUsage + "%" : "--"
             color: root.hovered ? Theme.selFg : Theme.fg
             font.pixelSize: Theme.fontSizeBar
             font.family: Theme.fontMono

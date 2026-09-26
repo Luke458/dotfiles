@@ -144,6 +144,7 @@ Item {
                 StyledButton {
                     id: refreshBtn
                     fixedWidth: 38
+                    Accessible.name: "Refresh VPN status"
                     enabled: !Mullvad.commandRunning
                     bordered: true
                     iconText: "\uf2f1"
@@ -178,24 +179,12 @@ Item {
                     }
                 }
 
-                TextField {
+                StyledTextField {
                     id: locationSearch
                     width: parent.width
-                    height: 34
-                    placeholderText: Mullvad.locationsLoading ? "Loading locations" : "Search country or city"
-                    placeholderTextColor: Theme.placeholderFg
-                    color: Theme.selFg
-                    selectionColor: Theme.selBg
-                    selectedTextColor: Theme.selFg
-                    font.pixelSize: Theme.fontSizeLabel
-                    font.family: Theme.fontMono
 
-                    background: Rectangle {
-                        radius: Theme.radiusMedium
-                        color: Theme.surfaceSubtle
-                        border.color: locationSearch.activeFocus ? Theme.selBg : Theme.border
-                        border.width: 1
-                    }
+                    placeholderText: Mullvad.locationsLoading ? "Loading locations" : "Search country or city"
+
                 }
 
                 Rectangle {
@@ -311,6 +300,7 @@ Item {
 
                         StyledSwitch {
                             checked: connectionSetting.modelData.checked
+                            Accessible.name: connectionSetting.modelData.label
                             busy: Mullvad.commandRunning
                             onToggled: connectionSetting.modelData.action(!checked)
                         }

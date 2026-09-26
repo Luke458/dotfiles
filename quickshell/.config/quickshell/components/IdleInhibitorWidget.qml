@@ -19,7 +19,7 @@ MouseArea {
         // Appearance
         anchors.centerIn: parent
         text: root.inhibited ? "☕" : "💤"
-        color: root.containsMouse ? Components.Theme.selBg : (root.inhibited ? Components.Theme.selBg : Components.Theme.fg)
+        color: root.containsMouse || root.inhibited ? Components.Theme.selFg : Components.Theme.fg
         font.pixelSize: Theme.fontSizeDisplaySmall
         verticalAlignment: Text.AlignVCenter
     }

@@ -16,10 +16,10 @@ Item {
     Component.onDestruction: Services.PodmanQuadlets.endDetails()
 
     function statusColor(unit) {
+        if (unit.activeState === "activating" || unit.activeState === "deactivating")
+            return Theme.yellow;
         if (!unit.healthy)
             return Theme.negative;
-        if (unit.activeState === "activating")
-            return Theme.yellow;
         return Theme.positive;
     }
 
@@ -74,31 +74,14 @@ Item {
                     }
                 }
 
-                MouseArea {
+                StyledButton {
                     id: refreshButton
-                    implicitWidth: refreshIcon.implicitWidth + Theme.controlPadding
-                    implicitHeight: 28
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    iconText: "\uf021"
+                    Accessible.name: "Refresh"
+                    fixedWidth: 30
+                    bordered: true
                     enabled: !Services.PodmanQuadlets.loading
                     onClicked: Services.PodmanQuadlets.refresh(true)
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color: refreshButton.containsMouse ? Theme.hover : Theme.transparent
-                        border.color: Theme.border
-                        border.width: 1
-                        radius: Theme.radiusMedium
-                    }
-
-                    Text {
-                        id: refreshIcon
-                        anchors.centerIn: parent
-                        text: Services.PodmanQuadlets.loading ? "…" : "\u{f0450}"
-                        color: refreshButton.enabled ? Theme.fg : Theme.placeholderFg
-                        font.family: Services.PodmanQuadlets.loading ? Theme.fontMono : Theme.fontIcon
-                        font.pixelSize: Theme.fontSizeTitle
-                    }
                 }
             }
 

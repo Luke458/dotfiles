@@ -9,10 +9,10 @@ import "../services"
 
 Item {
     id: root
-    
+
     implicitWidth: 400
     implicitHeight: Math.min(600, contentColumn.height + 40)
-    
+
     ScrollView {
         anchors.fill: parent
         contentWidth: availableWidth
@@ -28,7 +28,7 @@ Item {
             Column {
                 width: parent.width - 40
                 spacing: Theme.spacingSection
-                
+
                 Text {
                     width: parent.width
                     text: "MASTER VOLUME"
@@ -38,51 +38,37 @@ Item {
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 RowLayout {
                     width: parent.width
                     spacing: Theme.spacingLarge
-                    
-                    Button {
-                        id: muteBtn
-                        flat: true
-                        onClicked: Volume.toggleMute()
-                        background: Rectangle {
-                            implicitWidth: 36; implicitHeight: 36; radius: Theme.radiusPanel
-                            color: muteBtn.hovered ? Theme.hover : Theme.transparent
-                        }
-                        contentItem: IconImage {
-                            source: (Volume.audioSink && Volume.audioSink.audio && Volume.audioSink.audio.muted) ? "image://icon/audio-volume-muted" : "image://icon/audio-volume-high"
-                            width: 22; height: 22
-                        }
-                    }
-                    
-                    Slider {
+
+                    StyledButton {
+                                id: muteBtn
+                                fixedWidth: 32
+                                selected: Boolean(Volume.muted)
+                                iconText: selected ? "\uf6a9" : "\uf028"
+                                Accessible.name: "Master mute"
+                                enabled: Volume.audioSink !== null
+                                onClicked: Volume.toggleMute()
+                            }
+
+                    StyledSlider {
                         id: masterSlider
+                        Accessible.name: "Master volume"
                         Layout.fillWidth: true
-                        from: 0; to: 1
+                        enabled: Volume.audioSink !== null
+                        from: 0; to: 1; stepSize: 0.01
                         value: Volume.volume
                         onMoved: Volume.setVolume(value)
 
-                        background: Rectangle {
-                            x: masterSlider.leftPadding
-                            y: masterSlider.topPadding + masterSlider.availableHeight / 2 - height / 2
-                            implicitWidth: 200; implicitHeight: 4; width: masterSlider.availableWidth
-                            radius: Theme.radiusSmall; color: Theme.border; opacity: Theme.opacitySoft
-                            Rectangle { width: masterSlider.visualPosition * parent.width; height: parent.height; color: Theme.selBg; radius: Theme.radiusSmall }
-                        }
-                        handle: Rectangle {
-                            x: masterSlider.leftPadding + masterSlider.visualPosition * (masterSlider.availableWidth - width)
-                            y: masterSlider.topPadding + masterSlider.availableHeight / 2 - height / 2
-                            implicitWidth: 16; implicitHeight: 16; radius: Theme.radiusLarge; color: Theme.selFg
-                        }
-
                         Binding on value {
+                    restoreMode: Binding.RestoreNone
                             value: Volume.volume
                             when: !masterSlider.pressed
                         }
                     }
-                    
+
                     Text {
                         text: Volume.volumePercent + "%"
                         color: Theme.fg; font.pixelSize: Theme.fontSizeBar; font.family: Theme.fontMono; font.bold: true
@@ -91,20 +77,30 @@ Item {
                 }
             }
 
+            Text {
+                width: parent.width - Theme.sectionPadding * 2
+                visible: Volume.sinks.length === 0
+                text: "No audio output available"
+                color: Theme.fg
+                font.family: Theme.fontMono
+                font.pixelSize: Theme.fontSizeLabel
+                wrapMode: Text.Wrap
+            }
+
             // Applications Section
             Column {
                 width: parent.width - 40
                 spacing: Theme.spacingLarge
                 visible: Volume.apps.length > 0
-                
+
                 Rectangle { width: parent.width; height: 1; color: Theme.border; opacity: Theme.opacityFaint }
-                
+
                 Text {
                     width: parent.width
                     text: "APPLICATIONS"
                     color: Theme.selFg; font.pixelSize: Theme.fontSizeLabel; font.family: Theme.fontMono; font.bold: true; horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 Repeater {
                     model: Volume.apps
                     delegate: Column {
@@ -112,15 +108,15 @@ Item {
                         required property var modelData
                         width: parent.width
                         spacing: Theme.spacingComfortable
-                        
+
                         property string appName: Volume.getAppName(appDelegate.modelData)
-                        
+
                         PwObjectTracker { objects: [appDelegate.modelData] }
-                        
+
                         RowLayout {
                             width: parent.width
                             spacing: Theme.spacingSection
-                            
+
                             IconImage {
                                 id: appIconImage
                                 // Track the failed URL instead of assigning
@@ -136,26 +132,22 @@ Item {
                                 }
                                 Layout.preferredWidth: 24
                                 Layout.preferredHeight: 24
-                                onStatusChanged: if (status === Image.Error) failedSource = Volume.getAppIcon(appDelegate.modelData)
+                                onStatusChanged: if (status === Image.Error) failedSource = source.toString()
                             }
-                            
+
                             Text {
                                 text: appDelegate.appName.toUpperCase()
                                 color: Theme.fg; font.pixelSize: Theme.fontSizeLabel; font.family: Theme.fontMono; Layout.fillWidth: true; elide: Text.ElideRight
                             }
-                            
-                            Button {
+
+                            StyledButton {
                                 id: appMuteBtn
-                                flat: true
+                                fixedWidth: 32
+                                selected: Boolean(appDelegate.modelData && appDelegate.modelData.audio && appDelegate.modelData.audio.muted)
+                                iconText: selected ? "\uf6a9" : "\uf028"
+                                Accessible.name: appDelegate.appName + " mute"
+                                enabled: appDelegate.modelData !== null
                                 onClicked: Volume.toggleAppMute(appDelegate.appName)
-                                background: Rectangle {
-                                    implicitWidth: 28; implicitHeight: 28; radius: Theme.radiusMedium
-                                    color: appMuteBtn.hovered ? Theme.hover : Theme.transparent
-                                }
-                                contentItem: IconImage {
-                                    source: (appDelegate.modelData && appDelegate.modelData.audio && appDelegate.modelData.audio.muted) ? "image://icon/audio-volume-muted" : "image://icon/audio-volume-high"
-                                    width: 16; height: 16
-                                }
                             }
 
                             Text {
@@ -163,26 +155,17 @@ Item {
                                 color: Theme.fg; font.pixelSize: Theme.fontSizeBody; font.family: Theme.fontMono
                             }
                         }
-                        
-                        Slider {
+
+                        StyledSlider {
                             id: appSlider
+                            Accessible.name: appDelegate.appName + " volume"
                             width: parent.width
-                            from: 0; to: 1
+                            from: 0; to: 1; stepSize: 0.01
                             value: (appDelegate.modelData && appDelegate.modelData.audio) ? appDelegate.modelData.audio.volume : 0
                             onMoved: Volume.setAppVolume(appDelegate.appName, value)
-                            
-                            background: Rectangle {
-                                x: appSlider.leftPadding; y: appSlider.topPadding + appSlider.availableHeight / 2 - height / 2
-                                implicitWidth: 200; implicitHeight: 3; width: appSlider.availableWidth; radius: Theme.radiusSmall; color: Theme.border; opacity: Theme.opacityFaint
-                                Rectangle { width: appSlider.visualPosition * parent.width; height: parent.height; color: Theme.selBg; radius: Theme.radiusSmall }
-                            }
-                            handle: Rectangle {
-                                x: appSlider.leftPadding + appSlider.visualPosition * (appSlider.availableWidth - width)
-                                y: appSlider.topPadding + appSlider.availableHeight / 2 - height / 2
-                                implicitWidth: 12; implicitHeight: 12; radius: Theme.radiusPanel; color: Theme.selFg
-                            }
 
                             Binding on value {
+                    restoreMode: Binding.RestoreNone
                                 value: (appDelegate.modelData && appDelegate.modelData.audio) ? appDelegate.modelData.audio.volume : 0
                                 when: !appSlider.pressed
                             }
@@ -195,15 +178,15 @@ Item {
             Column {
                 width: parent.width - 40
                 spacing: Theme.spacingSection
-                
+
                 Rectangle { width: parent.width; height: 1; color: Theme.border; opacity: Theme.opacityFaint }
-                
+
                 Text {
                     width: parent.width
                     text: "OUTPUT DEVICES"
                     color: Theme.selFg; font.pixelSize: Theme.fontSizeLabel; font.family: Theme.fontMono; font.bold: true; horizontalAlignment: Text.AlignHCenter
                 }
-                
+
                 Repeater {
                     model: Volume.sinks
                     delegate: Button {
@@ -212,14 +195,14 @@ Item {
                         width: parent.width
                         flat: true
                         onClicked: Volume.selectSink(sinkBtn.modelData)
-                        
+
                         background: Rectangle {
                             implicitHeight: 38; radius: Theme.radiusPanel
                             color: (Volume.audioSink && Volume.audioSink.id === sinkBtn.modelData.id) ? Theme.selectionSubtle : (sinkBtn.hovered ? Theme.hoverSubtle : Theme.transparent)
                             border.width: (Volume.audioSink && Volume.audioSink.id === sinkBtn.modelData.id) ? 1 : 0
                             border.color: Theme.selBg
                         }
-                        
+
                         contentItem: RowLayout {
                             spacing: Theme.spacingSection
                             anchors.fill: parent

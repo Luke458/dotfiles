@@ -102,32 +102,15 @@ Item {
                 }
             }
 
-            MouseArea {
-                id: refreshButton
-                implicitWidth: refreshIcon.implicitWidth + Theme.controlPadding
-                implicitHeight: 28
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                enabled: !CodexUsageService.loading
-                onClicked: CodexUsageService.refresh()
-
-                Rectangle {
-                    anchors.fill: parent
-                    color: refreshButton.containsMouse ? Theme.hover : Theme.transparent
-                    border.color: Theme.border
-                    border.width: 1
-                    radius: Theme.radiusMedium
+            StyledButton {
+                    id: refreshButton
+                    iconText: "\uf021"
+                    Accessible.name: "Refresh"
+                    fixedWidth: 30
+                    bordered: true
+                    enabled: !CodexUsageService.loading
+                    onClicked: CodexUsageService.refresh()
                 }
-
-                Text {
-                    id: refreshIcon
-                    anchors.centerIn: parent
-                    text: CodexUsageService.loading ? "…" : "\u{f0450}"
-                    color: refreshButton.enabled ? Theme.fg : Theme.placeholderFg
-                    font.family: CodexUsageService.loading ? Theme.fontMono : Theme.fontIcon
-                    font.pixelSize: Theme.fontSizeTitle
-                }
-            }
         }
 
         Rectangle {

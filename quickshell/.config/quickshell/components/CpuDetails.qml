@@ -74,7 +74,7 @@ Item {
                     }
 
                     Text {
-                        text: Stats.cpuUsage + "%"
+                        text: Stats.cpuUsage >= 0 ? Stats.cpuUsage + "%" : "--"
                         color: Theme.selFg
                         font.pixelSize: Theme.fontSizeDisplayLarge
                         font.family: Theme.fontMono
@@ -231,7 +231,7 @@ Item {
                             implicitHeight: 7
                             color: Theme.border
                             radius: Theme.radiusCompact
-                            opacity: Theme.opacityMuted
+
 
                             Rectangle {
                                 width: Math.max(parent.radius * 2, (coreDelegate.usage / 100) * parent.width)

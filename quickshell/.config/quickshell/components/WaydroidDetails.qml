@@ -228,6 +228,7 @@ Item {
                 StyledButton {
                     id: refreshButton
                     fixedWidth: 38
+                    Accessible.name: "Refresh Android status"
                     enabled: !Services.Waydroid.loading && !Services.Waydroid.busy
                     bordered: true
                     iconText: Services.Waydroid.loading ? "…" : "\uf2f1"
@@ -278,26 +279,12 @@ Item {
                 Item { Layout.fillWidth: true }
             }
 
-            TextField {
+            StyledTextField {
                 id: appSearch
                 width: parent.width - Theme.panelPadding * 2
-                height: 34
-                placeholderText: "Search name or package"
-                placeholderTextColor: Theme.placeholderFg
-                color: Theme.selFg
-                selectionColor: Theme.selBg
-                selectedTextColor: Theme.selFg
-                font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeBody
-                leftPadding: Theme.spacingMedium
-                rightPadding: Theme.spacingMedium
 
-                background: Rectangle {
-                    color: Theme.fieldBg
-                    border.color: appSearch.activeFocus ? Theme.selBg : Theme.border
-                    border.width: 1
-                    radius: Theme.radiusMedium
-                }
+                placeholderText: "Search name or package"
+
             }
 
             Column {

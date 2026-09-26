@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import "../services"
 import "."
@@ -12,28 +11,9 @@ Item {
     implicitWidth: 380
     implicitHeight: mainLayout.implicitHeight + Theme.sectionPadding * 2
 
-    component ClockButton: Button {
-        id: control
-        flat: true
-        padding: Theme.spacingComfortable
-
-        background: Rectangle {
-            implicitHeight: 34
-            radius: Theme.radiusMedium
-            color: control.checked ? Theme.selectionMedium : (control.hovered ? Theme.hover : Theme.surfaceSubtle)
-            border.width: 1
-            border.color: control.checked ? Theme.selBg : Theme.border
-        }
-
-        contentItem: Text {
-            text: control.text
-            color: control.hovered || control.checked ? Theme.selFg : Theme.fg
-            font.pixelSize: Theme.fontSizeBody
-            font.family: Theme.fontMono
-            font.bold: true
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
+    component ClockButton: StyledButton {
+        selected: checked
+        bordered: true
     }
 
     ColumnLayout {
@@ -89,22 +69,14 @@ Item {
             }
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 1
-            color: Theme.separator
-        }
+        Divider { Layout.fillWidth: true }
 
         ColumnLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingComfortable
 
-            Text {
+            SectionHeading {
                 text: "STOPWATCH"
-                color: Theme.selFg
-                font.pixelSize: Theme.fontSizeLabel
-                font.family: Theme.fontMono
-                font.bold: true
             }
 
             Text {
@@ -132,22 +104,14 @@ Item {
             }
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 1
-            color: Theme.separator
-        }
+        Divider { Layout.fillWidth: true }
 
         ColumnLayout {
             Layout.fillWidth: true
             spacing: Theme.spacingComfortable
 
-            Text {
+            SectionHeading {
                 text: "COUNTDOWN"
-                color: Theme.selFg
-                font.pixelSize: Theme.fontSizeLabel
-                font.family: Theme.fontMono
-                font.bold: true
             }
 
             Text {
@@ -187,21 +151,13 @@ Item {
             }
         }
 
-        Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: 1
-            color: Theme.separator
-        }
+        Divider { Layout.fillWidth: true }
 
         RowLayout {
             Layout.fillWidth: true
 
-            Text {
+            SectionHeading {
                 text: "SYSTEM UPTIME"
-                color: Theme.selFg
-                font.pixelSize: Theme.fontSizeLabel
-                font.family: Theme.fontMono
-                font.bold: true
             }
 
             Item { Layout.fillWidth: true }

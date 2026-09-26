@@ -60,7 +60,7 @@ Item {
 
     function getHeaderValue(index) {
         switch (index) {
-            case 0: return root.percentText(Stats.gpuUsage);
+            case 0: return Stats.gpuAvailable ? root.percentText(Stats.gpuUsage) : "--";
             case 1: return root.percentText(Stats.gpuVramUsage);
             case 2: return root.tempText(Stats.gpuTempHotspot >= 0 ? Stats.gpuTempHotspot : Stats.gpuTempEdge);
             case 3: return root.powerText(Stats.gpuPower);
@@ -92,7 +92,7 @@ Item {
 
     function getMetricDetail(index) {
         switch (index) {
-            case 0: return root.percentText(Stats.gpuUsage);
+            case 0: return Stats.gpuAvailable ? root.percentText(Stats.gpuUsage) : "--";
             case 1: return root.bytesText(Stats.gpuVramUsed, Stats.gpuVramTotal);
             case 2: return root.bytesText(Stats.gpuVisVramUsed, Stats.gpuVisVramTotal);
             case 3: return root.bytesText(Stats.gpuGttUsed, Stats.gpuGttTotal);
@@ -326,7 +326,7 @@ Item {
                             implicitHeight: 7
                             color: Theme.border
                             radius: Theme.radiusCompact
-                            opacity: Theme.opacityMuted
+
 
                             Rectangle {
                                 width: Math.max(parent.radius * 2, (Math.max(0, root.getMetricValue(metricDelegate.index)) / 100) * parent.width)
@@ -497,7 +497,7 @@ Item {
                             implicitHeight: 6
                             color: Theme.border
                             radius: Theme.radiusCompact
-                            opacity: Theme.opacityMuted
+
 
                             Rectangle {
                                 width: Math.max(parent.radius * 2, Math.min(parent.width, (Math.max(0, processDelegate.usage) / 100) * parent.width))

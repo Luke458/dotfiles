@@ -9,7 +9,7 @@ Item {
     id: root
     
     implicitWidth: 350
-    implicitHeight: mainLayout.implicitHeight + 40
+    implicitHeight: mainLayout.implicitHeight + Theme.sectionPadding * 2
     
     ColumnLayout {
         id: mainLayout
@@ -21,63 +21,26 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             
-            Button {
-                id: prevMonthBtn
+            StyledButton {
                 text: "<"
-                flat: true
+                fixedWidth: 30
+                Accessible.name: "Previous month"
                 onClicked: Calendar.changeMonth(-1)
-                
-                background: Rectangle {
-                    implicitWidth: 32
-                    implicitHeight: 32
-                    radius: Theme.radiusMedium
-                    color: prevMonthBtn.hovered ? Theme.hover : Theme.transparent
-                }
-                
-                contentItem: Text {
-                    text: prevMonthBtn.text
-                    color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeDisplayLarge
-                    font.family: Theme.fontMono
-                    horizontalAlignment: Text.AlignHCenter
-                }
             }
 
-            Text {
+            StyledButton {
                 Layout.fillWidth: true
                 text: Calendar.monthYearString.toUpperCase()
-                color: Theme.selFg
-                font.pixelSize: Theme.fontSizeDisplaySmall
-                font.family: Theme.fontMono
                 font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-                
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: Calendar.resetToCurrentMonth()
-                }
+                Accessible.name: text + ", return to current month"
+                onClicked: Calendar.resetToCurrentMonth()
             }
 
-            Button {
-                id: nextMonthBtn
+            StyledButton {
                 text: ">"
-                flat: true
+                fixedWidth: 30
+                Accessible.name: "Next month"
                 onClicked: Calendar.changeMonth(1)
-                
-                background: Rectangle {
-                    implicitWidth: 32
-                    implicitHeight: 32
-                    radius: Theme.radiusMedium
-                    color: nextMonthBtn.hovered ? Theme.hover : Theme.transparent
-                }
-                
-                contentItem: Text {
-                    text: nextMonthBtn.text
-                    color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeDisplayLarge
-                    font.family: Theme.fontMono
-                    horizontalAlignment: Text.AlignHCenter
-                }
             }
         }
 
@@ -105,8 +68,8 @@ Item {
             id: grid
             Layout.fillWidth: true
             columns: 7
-            columnSpacing: 5
-            rowSpacing: 5
+            columnSpacing: Theme.spacingSmall
+            rowSpacing: Theme.spacingSmall
 
             property int selectedIndex: -1
 
@@ -121,52 +84,20 @@ Item {
 
             Repeater {
                 model: Calendar.calendarDays
-                delegate: Item {
+                delegate: StyledButton {
                     id: dayDelegate
                     required property int index
                     required property var modelData
                     Layout.fillWidth: true
-                    implicitHeight: dayText.implicitHeight + 10
-
-                    readonly property bool isSelected: grid.selectedIndex === dayDelegate.index
-                    readonly property bool showBorder: dayDelegate.modelData.isCurrentMonth && (isSelected || mouseArea.containsMouse || dayDelegate.modelData.isToday)
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Theme.radiusMedium
-                        color: dayDelegate.modelData.isToday ? Theme.selBg : Theme.transparent
-                        border.width: 1
-                        border.color: dayDelegate.showBorder ? Theme.selBg : Theme.transparent
-
-                        Behavior on border.color {
-                            ColorAnimation { duration: 120; easing.type: Easing.OutCubic }
-                        }
-                    }
-
-                    Text {
-                        id: dayText
-                        anchors.centerIn: parent
-                        text: dayDelegate.modelData.day
-                        color: {
-                            if (!dayDelegate.modelData.isCurrentMonth) return Qt.alpha(Theme.fg, 0.3);
-                            if (dayDelegate.modelData.isToday) return Theme.selFg;
-                            return Theme.fg;
-                        }
-                        font.pixelSize: Theme.fontSizeTitle
-                        font.family: Theme.fontMono
-                        font.bold: dayDelegate.modelData.isToday
-                    }
-
-                    MouseArea {
-                        id: mouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: dayDelegate.modelData.isCurrentMonth ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        onClicked: {
-                            if (dayDelegate.modelData.isCurrentMonth)
-                                grid.selectedIndex = dayDelegate.index
-                        }
-                    }
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 1
+                    horizontalPadding: 0
+                    text: String(modelData.day)
+                    enabled: modelData.isCurrentMonth
+                    selected: grid.selectedIndex === index || modelData.isToday
+                    font.bold: modelData.isToday
+                    Accessible.name: Calendar.monthYearString + " " + modelData.day + (modelData.isToday ? ", today" : "")
+                    onClicked: grid.selectedIndex = index
                 }
             }
         }

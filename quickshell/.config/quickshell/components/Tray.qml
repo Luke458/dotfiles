@@ -107,12 +107,15 @@ Item {
 
                 MouseArea {
                     anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                     onClicked: (mouse) => {
                         if (mouse.button === Qt.LeftButton) {
-                            if (!trayIcon.modelData.onlyMenu) {
+                            if (trayIcon.modelData.onlyMenu && trayIcon.modelData.menu)
+                                trayRoot.rootWindow.toggleTrayMenu(trayIcon.modelData.menu, trayIcon)
+                            else if (!trayIcon.modelData.onlyMenu)
                                 trayIcon.modelData.activate()
-                            }
                         } else if (mouse.button === Qt.MiddleButton) {
                             if (trayIcon.modelData.secondaryActivate) {
                                 trayIcon.modelData.secondaryActivate()

@@ -7,7 +7,7 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 - **Hyprland integration:** Workspace tracking, window titles, layout indicator, and dispatch commands.
 - **Universal launcher:** Desktop entry search plus native password-store and power pickers.
 - **System monitoring:** CPU, memory, AMD GPU, disk usage, and focused detail popups.
-- **Updates:** Always visible count and details for repo, AUR, Flatpak, and mise updates; package rows open upstream URLs. The popup can check now, run Cachy Update, upgrade mise, or run both in kitty.
+- **Updates:** Cachy Update icon and count in the collapsible bar section, with details for repo, AUR, Flatpak, and mise updates; package rows open upstream URLs. The popup can check now, run Cachy Update, upgrade mise, or run both in kitty.
 - **Tailscale:** bar indicator + flyout (connect toggle, exit-node selection, machine list, copy IP/DNS) backed by `services/Tailscale.qml`.
 - **Service-backed data:** Weather via Open-Meteo, BTC chart/price data via `services/Btc.qml`, Mullvad via `services/Mullvad.qml`, and audio via PipeWire.
 - **Interactivity:** Volume scroll/mute, Mullvad VPN controls, idle inhibition, system tray menus, notifications, media controls, lock screen, and power controls.

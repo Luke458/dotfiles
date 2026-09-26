@@ -13,13 +13,18 @@ append_import_path() {
     fi
 }
 
-if [ -d "$build_import_path" ]; then
+# The pinentry module is optional: services/Pinentry.qml already degrades to
+# "prompts disabled" when the module is absent, so a missing module must never
+# stop the shell from starting. Probe for the real qmldir rather than the
+# parent directory, so a half-finished build cannot shadow an installed module.
+if [ -f "$build_import_path/Luke/Quickshell/Pinentry/qmldir" ]; then
     module_import_paths="$build_import_path:$installed_import_path"
-elif [ -d "$installed_import_path/Luke/Quickshell/Pinentry" ]; then
-    module_import_paths="$installed_import_path"
 else
-    echo "Pinentry QML module is not available. Run: $root/scripts/build-pinentry-plugin" >&2
-    exit 1
+    module_import_paths="$installed_import_path"
+    if [ ! -f "$installed_import_path/Luke/Quickshell/Pinentry/qmldir" ]; then
+        printf 'Pinentry QML module not found; GPG prompts will be disabled. Run: %s\n' \
+            "$root/scripts/build-pinentry-plugin" >&2
+    fi
 fi
 
 QML2_IMPORT_PATH=$(append_import_path "${QML2_IMPORT_PATH:-}")
@@ -28,7 +33,12 @@ export QML2_IMPORT_PATH QML_IMPORT_PATH
 
 quickshell_bin=${QUICKSHELL_BIN:-"$HOME/.local/bin/quickshell"}
 if [ ! -x "$quickshell_bin" ]; then
-    quickshell_bin=$(command -v quickshell)
+    quickshell_bin=$(command -v quickshell || true)
+fi
+
+if [ -z "$quickshell_bin" ]; then
+    echo "quickshell not found; set QUICKSHELL_BIN or put it on PATH" >&2
+    exit 127
 fi
 
 exec "$quickshell_bin" "$@"

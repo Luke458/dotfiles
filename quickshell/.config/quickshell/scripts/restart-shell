@@ -13,6 +13,18 @@ if ! printf '%s' "$instance_json" | jq -e 'type == "array"' >/dev/null 2>&1; the
 fi
 instance_pids=$(printf '%s' "$instance_json" | jq -r --arg path "$config_path" '.[] | select(.config_path == $path) | .pid')
 
+# Distinguish "nothing is running" from "instances exist but none is this
+# config". The first is a normal start. The second usually means the path
+# drifted or a record outlived its process, and starting anyway would put a
+# second bar beside a live shell.
+if [ -z "$instance_pids" ] && [ "$(printf '%s' "$instance_json" | jq 'length')" -ne 0 ]; then
+    printf 'Quickshell instances exist but none matches %s; refusing to start a second one.\n' "$config_path" >&2
+    exit 75
+fi
+
+# Validate every selected instance before stopping any of them. Discovering a
+# locked instance only after an earlier, unlocked one was already killed would
+# leave the session with no shell and no restart.
 for instance_pid in $instance_pids; do
     lock_status=$(timeout 2 "$qs_command" ipc --pid "$instance_pid" call lock status 2>/dev/null) || lock_status=''
     if ! printf '%s' "$lock_status" | jq -e '
@@ -23,6 +35,9 @@ for instance_pid in $instance_pids; do
         printf 'Cannot confirm Quickshell process %s is unlocked; refusing restart.\n' "$instance_pid" >&2
         exit 75
     fi
+done
+
+for instance_pid in $instance_pids; do
     "$qs_command" kill --pid "$instance_pid"
 done
 

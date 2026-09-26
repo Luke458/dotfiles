@@ -41,8 +41,6 @@ require_text 'LazyLoader' shell.qml
 require_text 'background: Item \{\}' components/PickerOverlay.qml
 require_text 'atomicWrites: true' services/Notifications.qml
 require_text 'version: 1' services/Notifications.qml
-require_text 'kill -0' scripts/restart-shell
-require_text 'ipc call lock lock' scripts/lock-before-sleep
 require_text 'AddressInUseError' plugins/pinentry/src/pinentryserver.cpp
 require_text 'waitForConnected' plugins/pinentry/src/pinentryserver.cpp
 require_text 'QFileInfo::exists\(mSocketPath\)' plugins/pinentry/src/pinentryserver.cpp

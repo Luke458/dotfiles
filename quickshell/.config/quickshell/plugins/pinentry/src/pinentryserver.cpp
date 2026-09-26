@@ -39,6 +39,9 @@ PinentryServer::PinentryServer(QObject* parent)
 }
 
 PinentryServer::~PinentryServer() {
+    // Runs during QQmlEngine teardown on reload; QML must not observe
+    // activeRequestChanged/listeningChanged from a half-destroyed tree.
+    const QSignalBlocker blocker(this);
     stop();
 }
 
@@ -218,13 +221,20 @@ void PinentryServer::sendError(QLocalSocket* socket, const QString& message) {
 }
 
 void PinentryServer::reply(const QJsonObject& payload) {
-    if (mActiveSocket) {
-        mActiveSocket->write(jsonLine(payload));
-        mActiveSocket->flush();
-        mActiveSocket->disconnectFromServer();
-    }
-
+    // Detach the socket before any I/O. If the peer already hung up (e.g. the
+    // new tree's listener probe during a reload), write()/flush() can emit
+    // disconnected() synchronously, re-enter onDisconnected(), and null
+    // mActiveSocket mid-call.
+    const QPointer<QLocalSocket> socket = mActiveSocket;
     clearActiveRequest();
+    if (!socket) return;
+
+    QObject::disconnect(socket, nullptr, this, nullptr);
+    QObject::connect(socket, &QLocalSocket::disconnected, socket, &QObject::deleteLater);
+
+    socket->write(jsonLine(payload));
+    if (socket) socket->flush();
+    if (socket) socket->disconnectFromServer();
 }
 
 void PinentryServer::clearActiveRequest() {

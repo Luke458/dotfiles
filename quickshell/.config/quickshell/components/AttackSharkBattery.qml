@@ -8,10 +8,17 @@ import "."
 Item {
     id: root
 
+    property bool forceHovered: false
+    readonly property bool hovered: forceHovered || clickArea.containsMouse
+
     implicitWidth: layout.implicitWidth + Theme.controlPadding
     implicitHeight: 24
 
+    signal clicked()
+
     function statusColor() {
+        if (AttackSharkMetrics.charging || AttackSharkMetrics.wired)
+            return Theme.positive;
         if (AttackSharkMetrics.hasBattery && AttackSharkMetrics.battery <= 15)
             return Theme.negative;
         if (AttackSharkMetrics.stale)
@@ -30,7 +37,7 @@ Item {
 
         Text {
             text: "\u{efba}"
-            color: root.statusColor()
+            color: root.hovered ? Theme.selBg : root.statusColor()
             font.family: Theme.fontIcon
             font.pixelSize: Theme.fontSizeTitle
         }
@@ -43,9 +50,28 @@ Item {
                     return AttackSharkMetrics.battery + "%";
                 return AttackSharkMetrics.hasError ? "N/A" : "--";
             }
-            color: root.statusColor()
+            color: root.hovered ? Theme.selBg : root.statusColor()
             font.family: Theme.fontMono
             font.pixelSize: Theme.fontSizeBar
+        }
+
+        Text {
+            visible: AttackSharkMetrics.charging
+            text: "\u{f0e7}"
+            color: root.hovered ? Theme.selBg : root.statusColor()
+            font.family: Theme.fontIcon
+            font.pixelSize: Theme.fontSizeBar
+        }
+    }
+
+    MouseArea {
+        id: clickArea
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: {
+            AttackSharkMetrics.refresh();
+            root.clicked();
         }
     }
 }

@@ -46,9 +46,19 @@ require_text 'ipc call lock lock' scripts/lock-before-sleep
 require_text 'AddressInUseError' plugins/pinentry/src/pinentryserver.cpp
 require_text 'waitForConnected' plugins/pinentry/src/pinentryserver.cpp
 require_text 'QFileInfo::exists\(mSocketPath\)' plugins/pinentry/src/pinentryserver.cpp
+require_text 'AttackSharkDetails\.qml' windows/Bar.qml
+require_text 'AttackSharkMetrics\.beginDetails\(\)' components/AttackSharkDetails.qml
+require_text 'os\.getppid\(\) == parent' scripts/attack-shark-metrics
 reject_text 'launcherLease|barLeaseActive|instanceCheck' launcher.qml
 reject_text 'launcherLease|barLeaseActive|instanceCheck' pass.qml
 reject_text 'launcherLease|barLeaseActive|instanceCheck' power.qml
+
+for helper in attack-shark-metrics attack-shark-dpi; do
+    if [ ! -x "$shell_root/scripts/$helper" ]; then
+        printf '%s\n' "scripts/$helper must be executable" >&2
+        exit 1
+    fi
+done
 
 if [ ! -x "$shell_root/scripts/lock-before-sleep" ]; then
     printf '%s\n' 'scripts/lock-before-sleep must be executable' >&2

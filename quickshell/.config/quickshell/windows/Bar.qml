@@ -222,7 +222,14 @@ PanelWindow { // qmllint disable uncreatable-type
         }
     }
 
-    Component { id: attackSharkModule; Components.AttackSharkBattery {} }
+    Component {
+        id: attackSharkModule
+        Components.AttackSharkBattery {
+            id: item
+            forceHovered: window.popupAnchorHovered(item)
+            onClicked: window.toggleFlyout("AttackSharkDetails.qml", item)
+        }
+    }
 
     Component {
         id: codexModule

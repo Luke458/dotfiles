@@ -15,6 +15,7 @@ BtcTicker BtcTicker.qml
 CodexUsage CodexUsage.qml
 CodexUsageDetails CodexUsageDetails.qml
 AttackSharkBattery AttackSharkBattery.qml
+AttackSharkDetails AttackSharkDetails.qml
 PodmanQuadletIndicator PodmanQuadlets.qml
 PodmanQuadletsDetails PodmanQuadletsDetails.qml
 SingBoxIndicator SingBoxIndicator.qml

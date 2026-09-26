@@ -7,8 +7,9 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 - **Hyprland integration:** Workspace tracking, window titles, layout indicator, and dispatch commands.
 - **Universal launcher:** Desktop entry search plus native password-store and power pickers.
 - **System monitoring:** CPU, memory, AMD GPU, disk usage, and focused detail popups.
-- **Updates:** Cachy Update icon and count in the collapsible bar section, with details for repo, AUR, Flatpak, and mise updates; package rows open upstream URLs. The popup can check now, run Cachy Update, upgrade mise, or run both in kitty.
+- **Updates:** Cachy Update icon and count in the collapsible bar section, with details for repo, AUR, and mise updates; package rows open upstream URLs. The popup can check now, run Cachy Update, upgrade mise, or run both in kitty.
 - **Tailscale:** bar indicator + flyout (connect toggle, exit-node selection, machine list, copy IP/DNS) backed by `services/Tailscale.qml`.
+- **Attack Shark R5 mouse:** bar battery from the receiver's passive battery-change reports (stale-aware, charging bolt from the mouse's own flag while cabled) and a flyout with DPI stages read from the mouse; clicking a stage switches to it. Helpers are symlinked from `~/Projects/attack_shark_driver`.
 - **Service-backed data:** Weather via Open-Meteo, BTC chart/price data via `services/Btc.qml`, Mullvad via `services/Mullvad.qml`, and audio via PipeWire.
 - **Interactivity:** Volume scroll/mute, Mullvad VPN controls, idle inhibition, system tray menus, notifications, media controls, lock screen, and power controls.
 
@@ -30,11 +31,14 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 │   ├── MullvadDetails.qml    # Mullvad replacement popup
 │   ├── TailscaleIndicator.qml # Bar Tailscale indicator backed by services/Tailscale.qml
 │   ├── TailscaleDetails.qml  # Tailscale status, machines, and exit-node popup
+│   ├── AttackSharkBattery.qml # Bar mouse battery backed by services/AttackSharkMetrics.qml
+│   ├── AttackSharkDetails.qml # Mouse battery and DPI-stage popup
 │   ├── AdvancedWeatherDetails.qml
 │   ├── ShellPopup.qml        # PopupWindow flyout container
 │   ├── Tray.qml / TrayMenu.qml
 │   └── qmldir
 ├── services/
+│   ├── AttackSharkMetrics.qml # Streams attack-shark-metrics; DPI via attack-shark-dpi while the popup is open
 │   ├── Btc.qml               # CoinGecko/Coinbase-backed BTC service
 │   ├── Weather.qml           # Open-Meteo weather service
 │   ├── Mullvad.qml           # mullvad-cli status, relay, and settings service
@@ -45,6 +49,8 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 │   ├── Notifications.qml     # Optional notification server/history service
 │   └── qmldir
 ├── scripts/
+│   ├── attack-shark-metrics  # Symlink: passive mouse battery JSON-lines stream
+│   ├── attack-shark-dpi      # Symlink: mouse DPI status/select (--json)
 │   ├── btc_chart.sh          # One-shot BTC chart fetch for services/Btc.qml
 │   ├── build-pinentry-plugin # Builds the config-owned Pinentry QML module
 │   ├── install-pinentry-plugin

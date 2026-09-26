@@ -6,7 +6,7 @@ qs_command="$shell_root/scripts/qs"
 config_path="$shell_root/shell.qml"
 
 # Refuse to act on an unknown instance list or unknown lock state.
-instance_json=$("$qs_command" list -j) || exit 75
+instance_json=$("$qs_command" list --all -j) || exit 75
 if ! printf '%s' "$instance_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
     printf '%s\n' "Cannot read Quickshell instances; refusing restart." >&2
     exit 75
@@ -42,7 +42,7 @@ uwsm app -s b -t service -a luke-quickshell -d "Luke Quickshell" -- "$shell_root
 
 ready_count=0
 while [ "$ready_count" -lt 100 ]; do
-    if "$qs_command" list -j | jq -e --arg path "$config_path" '.[] | select(.config_path == $path)' >/dev/null 2>&1 \
+    if "$qs_command" list --all -j | jq -e --arg path "$config_path" '.[] | select(.config_path == $path)' >/dev/null 2>&1 \
         && "$qs_command" ipc call shell pickerStatus >/dev/null 2>&1; then
         exit 0
     fi

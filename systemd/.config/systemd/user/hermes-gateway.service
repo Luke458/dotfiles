@@ -6,10 +6,10 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/home/luke/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main gateway run
+ExecStart="/home/luke/.hermes/hermes-agent/.hermes/bin/hermes" "gateway" "run"
 WorkingDirectory=/home/luke/.hermes
-Environment="PATH=/home/luke/.hermes/hermes-agent/venv/bin:/home/luke/.hermes/hermes-agent/node_modules/.bin:/usr/bin:/home/luke/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Environment="VIRTUAL_ENV=/home/luke/.hermes/hermes-agent/venv"
+Environment="PATH=/home/luke/.hermes/hermes-agent/node_modules/.bin:/home/luke/.hermes/tools/node-26.7.0-linux-x64/bin:/home/luke/.hermes/tools/npm-12.0.2-linux-x64/bin:/home/luke/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
 Environment="HERMES_HOME=/home/luke/.hermes"
 Environment="HERMES_SUPERVISED_CHILD=1"
 Restart=always
@@ -20,7 +20,8 @@ RestartPreventExitStatus=78
 KillMode=mixed
 KillSignal=SIGTERM
 ExecReload=/bin/kill -USR1 $MAINPID
-ExecStopPost=-/home/luke/.hermes/hermes-agent/venv/bin/python -m gateway.cgroup_cleanup
+ExecStop=-"/home/luke/.hermes/hermes-agent/.hermes/bin/hermes" "--run-module" "gateway.systemd_stop_mark"
+ExecStopPost=-"/home/luke/.hermes/hermes-agent/.hermes/bin/hermes" "--run-module" "gateway.cgroup_cleanup"
 TimeoutStopSec=210
 StandardOutput=journal
 StandardError=journal

@@ -209,45 +209,25 @@ PanelWindow { // qmllint disable uncreatable-type
 
     // Copy the glyph to the clipboard; when ydotoold is running, type it into
     // the previously focused window instead of requiring a manual paste.
-    property Process emojiCopyProcess: Process {
-        stdout: StdioCollector {}
-        stderr: StdioCollector {}
-    }
-
-    property Timer emojiPasteTimer: Timer {
-        interval: 250
-        repeat: false
-        onTriggered: {
-            // The picker has closed by now, so typed keys land in the
-            // previously focused window.
-            root.emojiPasteProcess.command = ["ydotool", "type", root.pasteGlyph];
-            root.emojiPasteProcess.running = true;
-        }
-    }
-
-    property Process emojiPasteProcess: Process {
-        stdout: StdioCollector {
-            onStreamFinished: Osd.showMessage("check", "Inserted " + root.pasteGlyph)
-        }
-        stderr: StdioCollector {
-            onStreamFinished: Osd.showMessage("copy", "Copied " + root.pasteGlyph)
-        }
-    }
-
-    property string pasteGlyph: ""
-
+    //
+    // This deliberately owns no Process and no Timer. copyEmoji() closes the
+    // picker, and shell.qml drives PickerOverlay through a LazyLoader whose
+    // `active` follows OverlayController.opened, so the whole component is
+    // destroyed the moment the picker closes. A deferred timer would be torn
+    // down before it could ever fire, and a child Process would have its
+    // wl-copy pipeline killed with it. The copy, the settle delay and the
+    // keystrokes run as one detached process that outlives the window; the
+    // delay gives focus time to return to the previously focused window.
     function copyEmoji(glyph) {
         if (!glyph)
             return;
-        pasteGlyph = glyph;
-        emojiCopyProcess.command = ["sh", "-c", "printf %s \"$1\" | wl-copy", "emoji-copy", glyph];
-        emojiCopyProcess.running = true;
+        const script = pasteAvailable
+            ? 'printf %s "$1" | wl-copy && sleep 0.25 && ydotool type "$1"'
+            : 'printf %s "$1" | wl-copy';
+        Quickshell.execDetached(["sh", "-c", script, "emoji-copy", glyph]);
         requestClose("emoji-selected");
-        if (pasteAvailable) {
-            emojiPasteTimer.restart();
-        } else {
-            Osd.showMessage("copy", "Copied " + glyph);
-        }
+        Osd.showMessage(pasteAvailable ? "check" : "copy",
+            (pasteAvailable ? "Inserted " : "Copied ") + glyph);
     }
 
     function selectItem(index) {
@@ -341,9 +321,15 @@ PanelWindow { // qmllint disable uncreatable-type
     function initialize() {
         const gen = ++initSerial;
         passwordListProcess.running = false;
-        searchField.text = "";
+        // Tear down the previous mode's data before touching searchField:
+        // clearing the field emits textChanged, whose handler re-runs
+        // updateFilter against allItems, so clearing it first would repopulate
+        // the model with the outgoing mode's rows.
         allItems = [];
         currentMatches = [];
+        resultsModel.clear();
+        resultsList.currentIndex = -1;
+        searchField.text = "";
         statusText = "";
         actionPending = false;
         if (mode === "pass") {

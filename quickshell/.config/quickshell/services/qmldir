@@ -22,3 +22,4 @@ singleton Waydroid Waydroid.qml
 singleton Osd Osd.qml
 singleton NetworkService Network.qml
 singleton Tailscale Tailscale.qml
+singleton Updates Updates.qml

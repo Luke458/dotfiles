@@ -83,6 +83,20 @@ ShellRoot {
     }
 
     IpcHandler {
+        target: "updates"
+
+        function status(): string {
+            return JSON.stringify({total: Updates.total, checking: Updates.checking,
+                lastChecked: Updates.lastChecked, sources: Updates.sources,
+                actionError: Updates.actionError});
+        }
+
+        function refresh(): void {
+            Updates.refresh();
+        }
+    }
+
+    IpcHandler {
         target: "bar"
         function setLauncherScreen(screenName: string): void {
             if (screenName === "") {

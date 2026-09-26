@@ -16,7 +16,8 @@ Item {
     Layout.preferredHeight: implicitHeight
 
     required property var rootWindow
-    readonly property var trayItems: SystemTray.items && SystemTray.items.values ? SystemTray.items.values : []
+    readonly property var trayItems: SystemTray.items && SystemTray.items.values
+        ? SystemTray.items.values.filter(item => !String(item.id || "").toLowerCase().includes("arch-update")) : []
     readonly property int itemCount: trayItems.length
     readonly property int iconSize: 20
     readonly property int iconSpacing: 5

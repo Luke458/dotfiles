@@ -7,6 +7,7 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 - **Hyprland integration:** Workspace tracking, window titles, layout indicator, and dispatch commands.
 - **Universal launcher:** Desktop entry search plus native password-store and power pickers.
 - **System monitoring:** CPU, memory, AMD GPU, disk usage, and focused detail popups.
+- **Updates:** Always visible count and details for repo, AUR, Flatpak, and mise updates; package rows open upstream URLs. The popup can check now, run Cachy Update, upgrade mise, or run both in kitty.
 - **Tailscale:** bar indicator + flyout (connect toggle, exit-node selection, machine list, copy IP/DNS) backed by `services/Tailscale.qml`.
 - **Service-backed data:** Weather via Open-Meteo, BTC chart/price data via `services/Btc.qml`, Mullvad via `services/Mullvad.qml`, and audio via PipeWire.
 - **Interactivity:** Volume scroll/mute, Mullvad VPN controls, idle inhibition, system tray menus, notifications, media controls, lock screen, and power controls.
@@ -59,6 +60,7 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 - Target Quickshell: `0.3.0`.
 - Popups use `PopupWindow` with `anchor.window`/`anchor.rect` positioning.
 - Bar-level CPU, memory, and GPU utilization is polled every 2 seconds. Detailed clocks, thermals, and process lists are collected only while their popups are open.
+- Update checks run on shell startup and every 30 minutes. Failed sources retain their previous results and show an error. The Cachy Update tray autostart override and disabled `arch-update.timer` prevent duplicate checks. `qs ipc call updates status` returns live source status.
 - Launcher, password, and power pickers renew a short bar-visibility lease so a crashed picker cannot leave a monitor bar hidden.
 - Notification history is capped, ignores transient notifications, follows replacement updates, and respects application timeout requests.
 - `QS_NOTIFICATION_SERVER=auto|on|off` controls notification ownership. `auto` creates Quickshell's server only when no existing DBus owner is present.

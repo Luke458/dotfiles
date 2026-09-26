@@ -36,6 +36,8 @@ ShellPopup ShellPopup.qml
 PickerOverlay PickerOverlay.qml
 ScreenMoveRemap ScreenMoveRemap.qml
 Tray Tray.qml
+Updates Updates.qml
+UpdatesDetails UpdatesDetails.qml
 TrayMenu TrayMenu.qml
 TrayMenuOverlay TrayMenuOverlay.qml
 VolumeWidget VolumeWidget.qml

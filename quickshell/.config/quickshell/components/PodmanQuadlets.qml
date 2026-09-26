@@ -34,7 +34,7 @@ Item {
 
         Text {
             text: "\u{e842}"
-            color: root.hovered ? Theme.selBg : root.statusColor
+            color: root.hovered ? Theme.selFg : root.statusColor
             font.family: Theme.fontIcon
             font.pixelSize: Theme.fontSizeTitle
         }
@@ -47,7 +47,7 @@ Item {
                     return "--";
                 return Services.PodmanQuadlets.healthy + "/" + Services.PodmanQuadlets.total;
             }
-            color: root.hovered ? Theme.selBg : root.statusColor
+            color: root.hovered ? Theme.selFg : root.statusColor
             font.family: Theme.fontMono
             font.pixelSize: Theme.fontSizeBar
             font.bold: Services.PodmanQuadlets.failed > 0

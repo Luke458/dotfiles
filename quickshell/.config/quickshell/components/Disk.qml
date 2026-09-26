@@ -21,12 +21,12 @@ Item {
             text: "\u{f0a0}"
             font.family: Theme.fontIcon
             font.pixelSize: Theme.fontSizeTitle
-            color: root.hovered ? Theme.selBg : Theme.fg
+            color: root.hovered ? Theme.selFg : Theme.fg
         }
 
         Text {
             text: Stats.diskUsage + "%"
-            color: root.hovered ? Theme.selBg : Theme.fg
+            color: root.hovered ? Theme.selFg : Theme.fg
             font.pixelSize: Theme.fontSizeBar
             font.family: Theme.fontMono
         }

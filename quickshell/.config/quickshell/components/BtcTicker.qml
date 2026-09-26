@@ -24,7 +24,7 @@ Item {
             text: "\u{f15a}"
             font.family: Theme.fontIcon
             font.pixelSize: Theme.fontSizeTitle
-            color: root.hovered ? Theme.selBg : Theme.fg
+            color: root.hovered ? Theme.selFg : Theme.fg
         }
 
         Text {
@@ -34,7 +34,7 @@ Item {
                 if (!Btc.currentAud) return "--"
                 return root.formatAud(Btc.currentAud)
             }
-            color: root.hovered ? Theme.selBg : Theme.fg
+            color: root.hovered ? Theme.selFg : Theme.fg
             font.pixelSize: Theme.fontSizeBar
             font.family: Theme.fontMono
         }

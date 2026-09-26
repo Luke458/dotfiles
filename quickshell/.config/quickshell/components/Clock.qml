@@ -28,12 +28,12 @@ Item {
             text: clock.getClockIcon()
             font.family: Theme.fontIcon
             font.pixelSize: Theme.fontSizeTitle
-            color: clock.hovered ? Theme.selBg : Theme.fg
+            color: clock.hovered ? Theme.selFg : Theme.fg
         }
 
         Text {
             text: Timekeeping.barTime
-            color: clock.hovered ? Theme.selBg : Theme.fg
+            color: clock.hovered ? Theme.selFg : Theme.fg
             font.pixelSize: Theme.fontSizeBar
             font.family: Theme.fontMono
         }

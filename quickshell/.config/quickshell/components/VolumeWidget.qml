@@ -21,12 +21,12 @@ Item {
             text: Volume.muted ? "\u{F0581}" : "\u{F057E}"
             font.family: Theme.fontIcon
             font.pixelSize: Theme.fontSizeTitle
-            color: root.hovered ? Theme.selBg : (Volume.muted ? Theme.red : Theme.fg)
+            color: root.hovered ? Theme.selFg : (Volume.muted ? Theme.red : Theme.fg)
         }
 
         Text {
             text: Volume.muted ? "Muted" : Volume.volumePercent + "%"
-            color: root.hovered ? Theme.selBg : Theme.fg
+            color: root.hovered ? Theme.selFg : Theme.fg
             font.pixelSize: Theme.fontSizeBar
             font.family: Theme.fontMono
         }

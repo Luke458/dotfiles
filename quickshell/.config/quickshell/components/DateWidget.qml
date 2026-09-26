@@ -23,12 +23,12 @@ Item {
             text: "\u{f00ed}"
             font.family: Theme.fontIcon
             font.pixelSize: Theme.fontSizeTitle
-            color: root.hovered ? Theme.selBg : Theme.fg
+            color: root.hovered ? Theme.selFg : Theme.fg
         }
 
         Text {
             text: Qt.formatDateTime(Timekeeping.now, "ddd MMM d")
-            color: root.hovered ? Theme.selBg : Theme.fg
+            color: root.hovered ? Theme.selFg : Theme.fg
             font.pixelSize: Theme.fontSizeBar
             font.family: Theme.fontMono
         }

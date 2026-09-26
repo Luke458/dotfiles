@@ -118,6 +118,17 @@ PanelWindow { // qmllint disable uncreatable-type
                     id: moduleLoader
                     anchors.verticalCenter: parent.verticalCenter
                     sourceComponent: moduleEntry.modelData
+
+                    Rectangle {
+                        anchors.fill: parent
+                        z: -1
+                        color: Components.Theme.selBg
+                        // Loaded modules expose different optional hover properties.
+                        // qmllint disable missing-property
+                        visible: moduleLoader.item !== null && (moduleLoader.item.hovered === true
+                            || moduleLoader.item.containsMouse === true || moduleLoader.item.forceHovered === true)
+                        // qmllint enable missing-property
+                    }
                 }
 
                 Components.Separator {
@@ -339,12 +350,12 @@ PanelWindow { // qmllint disable uncreatable-type
                     text: Notifications.doNotDisturb ? "\u{f1f6}" : (Notifications.unreadCount > 0 ? "\u{f0f3}" : "\u{eaa2}")
                     font.family: Components.Theme.fontIcon
                     font.pixelSize: Components.Theme.fontSizeTitle
-                    color: item.hovered ? Components.Theme.selBg : Components.Theme.fg
+                    color: item.hovered ? Components.Theme.selFg : Components.Theme.fg
                 }
                 Text {
                     text: Notifications.unreadCount
                     visible: Notifications.unreadCount > 0
-                    color: item.hovered ? Components.Theme.selBg : Components.Theme.fg
+                    color: item.hovered ? Components.Theme.selFg : Components.Theme.fg
                     font.pixelSize: Components.Theme.fontSizeBody
                     font.family: Components.Theme.fontMono
                     font.bold: true
@@ -371,7 +382,7 @@ PanelWindow { // qmllint disable uncreatable-type
                 text: "\u{f0425}"
                 font.family: Components.Theme.fontIcon
                 font.pixelSize: Components.Theme.fontSizeTitle
-                color: item.containsMouse ? Components.Theme.red : Components.Theme.fg
+                color: item.containsMouse ? Components.Theme.selFg : Components.Theme.fg
             }
             onClicked: window.togglePowerMenu()
         }
@@ -431,11 +442,16 @@ PanelWindow { // qmllint disable uncreatable-type
                 implicitHeight: 24
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
+                Rectangle {
+                    anchors.fill: parent
+                    color: Components.Theme.selBg
+                    visible: expandButton.containsMouse
+                }
                 Text {
                     id: expandText
                     anchors.centerIn: parent
                     text: window.leftSectionExpanded ? ">" : "<"
-                    color: expandButton.containsMouse ? Components.Theme.selBg : Components.Theme.fg
+                    color: expandButton.containsMouse ? Components.Theme.selFg : Components.Theme.fg
                     font.pixelSize: Components.Theme.fontSizeBar
                     font.family: Components.Theme.fontMono
                     font.bold: true

@@ -79,17 +79,25 @@ A modular desktop shell for Hyprland built with Quickshell `0.3.0`.
 
 ## Theming
 
-All colors, fonts, spacing, radii, and opacity roles are tokens on the `Theme`
-singleton; the defaults reproduce the stock DWM-inspired look exactly. A JSON
-file can override any token by name:
+The shared defaults use flat, opaque surfaces, square controls, compact monospace
+labels, and DWM's gray/cyan selection palette. Bar hover states use light text on
+cyan instead of low-contrast cyan text. Buttons support Tab/Space, switches
+support Tab/Space/Return, and flyouts support Escape and scroll when larger than
+the available screen area.
+
+A JSON file overrides the base tokens on the `Theme` singleton:
 
 - Path: `$QS_THEME_FILE`, otherwise `theme.json` next to `shell.qml`.
-- Values: numbers assign directly (`"fontSizeBar": 13`); strings that look like
-  colors parse as colors (`"#005577"`, `"rgba(255,0,0,0.5)"`); other strings
-  assign verbatim (font families).
-- Derived tokens (`selection*`, `placeholderFg`, `positiveSurface`) follow their
-  base token automatically; overriding `selBg` recolors every selection surface.
-- The file is watched: edits apply live without a reload.
+- Values are type-checked: valid Qt color strings, nonempty font names,
+  nonnegative integer geometry, positive integer font sizes, and opacity in 0–1.
+- Derived tokens (`selection*`, `placeholderFg`, status surfaces) follow their
+  base colors. Hover/field colors follow `fg` unless explicitly overridden;
+  `bg` follows `bgSolid` unless overridden.
+- The file is watched. Each valid object replaces the previous overrides;
+  removed keys or a deleted file restore defaults. Malformed JSON retains the
+  last valid theme. Invalid keys/values are ignored with a warning.
+- Popup and notification backgrounds use `bgSolid` for readability. Override
+  `bg` independently if you want a translucent bar/picker.
 
 Example:
 

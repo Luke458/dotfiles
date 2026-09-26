@@ -25,7 +25,7 @@ MouseArea {
 
         Text {
             text: root.hyprsunset.enabled ? root.hyprsunset.temperature + "K" : "OFF"
-            color: (root.forceHovered || root.containsMouse) ? Theme.selBg : (root.hyprsunset.enabled ? Theme.selFg : Theme.fg)
+            color: (root.forceHovered || root.containsMouse) ? Theme.selFg : (root.hyprsunset.enabled ? Theme.selFg : Theme.fg)
             font.pixelSize: Theme.fontSizeBody
             font.family: Theme.fontMono
             font.bold: root.hyprsunset.enabled

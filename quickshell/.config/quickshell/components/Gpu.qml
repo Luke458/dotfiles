@@ -21,12 +21,12 @@ Item {
             text: "\u{f08ae}"
             font.family: Theme.fontIcon
             font.pixelSize: Theme.fontSizeHeadingLarge
-            color: root.hovered ? Theme.selBg : Theme.fg
+            color: root.hovered ? Theme.selFg : Theme.fg
         }
 
         Text {
             text: Stats.gpuUsage + "%"
-            color: root.hovered ? Theme.selBg : Theme.fg
+            color: root.hovered ? Theme.selFg : Theme.fg
             font.pixelSize: Theme.fontSizeBar
             font.family: Theme.fontMono
         }

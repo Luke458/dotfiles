@@ -39,7 +39,7 @@ Item {
 
         Text {
             text: Mullvad.indicatorLabel
-            color: root.hovered ? Theme.selBg : root.statusColor
+            color: root.hovered ? Theme.selFg : root.statusColor
             font.pixelSize: Theme.fontSizeBody
             font.family: Theme.fontMono
             font.bold: Mullvad.connected || Mullvad.lockedDown || Mullvad.lockdownMode

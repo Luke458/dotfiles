@@ -163,7 +163,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: root.isSubMenu
-        color: Components.Theme.bg
+        color: Components.Theme.bgSolid
         border.color: Components.Theme.border
         border.width: 1
         radius: Theme.radiusNone

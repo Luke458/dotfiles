@@ -46,7 +46,7 @@ Rectangle {
     implicitHeight: cardLayout.implicitHeight + 20
     height: implicitHeight
     
-    color: Theme.bg
+    color: Theme.bgSolid
     border.color: (cardClickArea.containsMouse && (root.canActivate || root.canExpand)) ? Theme.selBg : Theme.border
     border.width: 1
     radius: Theme.radiusNone

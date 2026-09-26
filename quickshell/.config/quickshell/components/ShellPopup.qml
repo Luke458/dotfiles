@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Wayland
 import "."
@@ -24,6 +25,7 @@ PanelWindow { // qmllint disable uncreatable-type
     property int hoverOpenGraceMs: 900
     property int hoverDismissDelayMs: 500
     property bool isAnchorHovered: false
+    property bool keyboardInteraction: false
     property var currentComponent: null
     property var pendingProperties: ({})
     readonly property var loadedItem: contentLoader.item
@@ -48,6 +50,17 @@ PanelWindow { // qmllint disable uncreatable-type
     }
 
     color: Theme.transparent
+
+    component PopupScrollBar: ScrollBar {
+        id: scrollBar
+        padding: 0
+        contentItem: Rectangle {
+            implicitWidth: 6
+            implicitHeight: 6
+            color: scrollBar.pressed ? Theme.selBg : Theme.scrollIndicator
+        }
+        background: Rectangle { color: Theme.surfaceSubtle }
+    }
 
     function updateAnchorMetrics() {
         if (!anchorItem) {
@@ -129,7 +142,7 @@ PanelWindow { // qmllint disable uncreatable-type
             return;
         }
 
-        if (hoverGraceTimer.running || containsPopupMouse) {
+        if (hoverGraceTimer.running || containsPopupMouse || keyboardInteraction) {
             hoverDismissTimer.stop();
         } else {
             if (!hoverDismissTimer.running) {
@@ -145,6 +158,7 @@ PanelWindow { // qmllint disable uncreatable-type
         } else {
             hoverGraceTimer.stop();
             hoverDismissTimer.stop();
+            keyboardInteraction = false;
             pointerX = -1;
             pointerY = -1;
             currentComponent = null;
@@ -153,6 +167,8 @@ PanelWindow { // qmllint disable uncreatable-type
             contentLoader.source = "";
         }
     }
+
+    onKeyboardInteractionChanged: updateHoverDismiss()
 
     onAnchorItemChanged: {
         updateAnchorMetrics();
@@ -203,7 +219,7 @@ PanelWindow { // qmllint disable uncreatable-type
         interval: root.hoverDismissDelayMs
         repeat: false
         onTriggered: {
-            if (root.visible && root.dismissOnHoverLeave && !root.containsPopupMouse) {
+            if (root.visible && root.dismissOnHoverLeave && !root.containsPopupMouse && !root.keyboardInteraction) {
                 root.visible = false;
             }
         }
@@ -218,15 +234,16 @@ PanelWindow { // qmllint disable uncreatable-type
 
     Rectangle {
         id: background
+        objectName: "popup-background"
         z: 10
         x: root.clampedX()
-        y: root.preferredY()
+        y: Math.max(0, Math.min(root.preferredY(), root.height - height))
         width: implicitWidth
         height: implicitHeight
-        implicitWidth: container.width + (container.padding * 2)
-        implicitHeight: container.height + (container.padding * 2)
+        implicitWidth: Math.min(container.width + container.padding * 2, Math.max(0, root.width - root.edgeMargin * 2))
+        implicitHeight: Math.min(container.height + container.padding * 2, Math.max(0, root.height - root.preferredY()))
 
-        color: Theme.bg
+        color: Theme.bgSolid
         border.color: Theme.border
         border.width: 1
         radius: Theme.radiusNone
@@ -243,46 +260,59 @@ PanelWindow { // qmllint disable uncreatable-type
             }
         }
 
-        Item {
-            id: container
-            x: padding
-            y: padding
-            property int padding: Theme.popupPadding
-
-            HoverHandler {
-                id: containerHover
-                onHoveredChanged: root.updateHoverDismiss()
+        ScrollView {
+            id: viewport
+            objectName: "popup-viewport"
+            focus: true
+            anchors.fill: parent
+            anchors.margins: Theme.popupPadding
+            clip: true
+            contentWidth: container.width
+            contentHeight: container.height
+            ScrollBar.horizontal: PopupScrollBar {
+                policy: viewport.contentWidth > viewport.availableWidth ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
             }
+            ScrollBar.vertical: PopupScrollBar {
+                policy: viewport.contentHeight > viewport.availableHeight ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+            }
+            Keys.onEscapePressed: root.close()
+            Keys.onPressed: event => {
+                root.keyboardInteraction = true;
+                event.accepted = false;
+            }
+            onActiveFocusChanged: if (!activeFocus) root.keyboardInteraction = false
 
-            // Drive size from first child's implicit size
-            width: children.length > 0 ? children[0].implicitWidth : 0
-            height: children.length > 0 ? children[0].implicitHeight : 0
+            Item {
+                id: container
+                property int padding: Theme.popupPadding
 
-            Loader {
-                id: contentLoader
-
-                // qmllint disable missing-property
-                onStatusChanged: {
-                    if (status === Loader.Ready && item) {
-                        if (item.requestClose !== undefined)
-                            item.requestClose.connect(root.close);
-                        if (item.itemTriggered !== undefined)
-                            item.itemTriggered.connect(root.close);
-                    } else if (status === Loader.Error) {
-                        console.warn("ShellPopup: failed to load " + root.currentComponent);
-                        root.close();
-                    }
+                HoverHandler {
+                    id: containerHover
+                    onHoveredChanged: root.updateHoverDismiss()
                 }
-                // qmllint enable missing-property
+
+                // Drive size from first child's implicit size
+                width: children.length > 0 ? children[0].implicitWidth : 0
+                height: children.length > 0 ? children[0].implicitHeight : 0
+
+                Loader {
+                    id: contentLoader
+
+                    // qmllint disable missing-property
+                    onStatusChanged: {
+                        if (status === Loader.Ready && item) {
+                            if (item.requestClose !== undefined)
+                                item.requestClose.connect(root.close);
+                            if (item.itemTriggered !== undefined)
+                                item.itemTriggered.connect(root.close);
+                        } else if (status === Loader.Error) {
+                            console.warn("ShellPopup: failed to load " + root.currentComponent);
+                            root.close();
+                        }
+                    }
+                    // qmllint enable missing-property
+                }
             }
         }
-    }
-
-    OpacityAnimator {
-        target: root.contentItem
-        from: 0
-        to: 1
-        duration: 200
-        running: root.visible
     }
 }

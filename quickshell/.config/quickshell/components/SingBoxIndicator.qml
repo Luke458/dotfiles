@@ -33,7 +33,7 @@ Item {
 
         Text {
             text: "\u{f0ac}"
-            color: root.hovered ? Theme.selBg : root.statusColor
+            color: root.hovered ? Theme.selFg : root.statusColor
             font.family: Theme.fontIcon
             font.pixelSize: Theme.fontSizeTitle
         }
@@ -41,7 +41,7 @@ Item {
         Text {
             text: Services.SingBox.loading && Services.SingBox.routes.length === 0
                 ? "..." : Services.SingBox.total
-            color: root.hovered ? Theme.selBg : root.statusColor
+            color: root.hovered ? Theme.selFg : root.statusColor
             font.family: Theme.fontMono
             font.pixelSize: Theme.fontSizeBar
             font.bold: !Services.SingBox.healthy

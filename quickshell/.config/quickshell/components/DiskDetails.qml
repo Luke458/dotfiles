@@ -30,7 +30,7 @@ Item {
             Text {
                 text: "DISK USAGE"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeHeading
+                font.pixelSize: Theme.panelTitleSize
                 font.family: Theme.fontMono
                 font.bold: true
                 Layout.alignment: Qt.AlignHCenter
@@ -86,14 +86,14 @@ Item {
                                     textFormat: Text.PlainText
                                     color: Theme.fg
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeLabel
+                                    font.pixelSize: Theme.panelBodySize
                                     Layout.fillWidth: true 
                                 }
                                 Text { 
                                     text: partitionDelegate.modelData.used + " / " + partitionDelegate.modelData.size + " (" + partitionDelegate.modelData.percent + "%)"
                                     color: Theme.fg
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeBody
+                                    font.pixelSize: Theme.panelCaptionSize
                                 }
                             }
 

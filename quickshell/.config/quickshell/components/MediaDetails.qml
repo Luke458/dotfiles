@@ -92,7 +92,7 @@ Item {
                             id: titleText
                             text: Media.trackTitle
                             color: Theme.selFg
-                            font.pixelSize: Theme.fontSizeHeadingLarge
+                            font.pixelSize: Theme.panelTitleSize
                             font.family: Theme.fontMono
                             font.bold: true
                             wrapMode: Text.Wrap
@@ -105,7 +105,7 @@ Item {
                         Text {
                             text: root.titleExpanded ? "Collapse ▲" : "Expand ▼"
                             color: Theme.fg
-                            font.pixelSize: Theme.fontSizeSmall
+                            font.pixelSize: Theme.panelCaptionSize
                             font.family: Theme.fontMono
                             font.bold: true
                             visible: titleText.truncated || root.titleExpanded
@@ -127,7 +127,7 @@ Item {
                 Text {
                     text: Media.trackArtist
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeBar
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     elide: Text.ElideRight
                     Layout.fillWidth: true
@@ -136,9 +136,9 @@ Item {
                 Text {
                     text: Media.trackAlbum || ""
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeBody
+                    font.pixelSize: Theme.panelCaptionSize
                     font.family: Theme.fontMono
-                    opacity: Theme.opacitySecondaryLow
+                    opacity: Theme.opacitySecondary
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                     visible: text !== ""
@@ -178,7 +178,7 @@ Item {
                 Text {
                     text: root.formatTime(Media.currentPosition)
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: Theme.panelCaptionSize
                     font.family: Theme.fontMono
                 }
 
@@ -187,7 +187,7 @@ Item {
                 Text {
                     text: root.formatTime(Media.trackLength / 1e6)
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: Theme.panelCaptionSize
                     font.family: Theme.fontMono
                 }
             }
@@ -232,7 +232,7 @@ Item {
         anchors.centerIn: parent
         text: "NO MEDIA PLAYING"
         color: Theme.fg
-        font.pixelSize: Theme.fontSizeBar
+        font.pixelSize: Theme.panelBodySize
         font.family: Theme.fontMono
         visible: !Media.hasMedia
     }

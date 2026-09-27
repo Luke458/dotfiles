@@ -30,7 +30,7 @@ Item {
                 Layout.fillWidth: true
                 text: Timekeeping.fullTime
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeHero
+                font.pixelSize: Theme.panelReadoutSize
                 font.family: Theme.fontMono
                 font.bold: true
                 horizontalAlignment: Text.AlignHCenter
@@ -40,7 +40,7 @@ Item {
                 Layout.fillWidth: true
                 text: Timekeeping.fullDate
                 color: Theme.fg
-                font.pixelSize: Theme.fontSizeBar
+                font.pixelSize: Theme.panelBodySize
                 font.family: Theme.fontMono
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -83,7 +83,7 @@ Item {
                 Layout.fillWidth: true
                 text: Timekeeping.stopwatchText
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeValueMedium
+                font.pixelSize: Theme.panelReadoutSize
                 font.family: Theme.fontMono
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -118,7 +118,7 @@ Item {
                 Layout.fillWidth: true
                 text: Timekeeping.countdownText
                 color: Timekeeping.countdownRemainingMs <= 0 ? Theme.red : Theme.selFg
-                font.pixelSize: Theme.fontSizeValueMedium
+                font.pixelSize: Theme.panelReadoutSize
                 font.family: Theme.fontMono
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -165,7 +165,7 @@ Item {
             Text {
                 text: Timekeeping.uptimeText
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 font.family: Theme.fontMono
             }
         }

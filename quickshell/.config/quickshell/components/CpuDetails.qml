@@ -45,7 +45,7 @@ Item {
             Text {
                 text: Stats.cpuModel || "CPU"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeHeading
+                font.pixelSize: Theme.panelTitleSize
                 font.family: Theme.fontMono
                 font.bold: true
                 horizontalAlignment: Text.AlignHCenter
@@ -66,17 +66,17 @@ Item {
                     Text {
                         text: "TOTAL"
                         color: Theme.fg
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         font.bold: true
-                        opacity: Theme.opacitySecondaryLow
+                        opacity: Theme.opacitySecondary
                         Layout.alignment: Qt.AlignHCenter
                     }
 
                     Text {
                         text: Stats.cpuUsage >= 0 ? Stats.cpuUsage + "%" : "--"
                         color: Theme.selFg
-                        font.pixelSize: Theme.fontSizeDisplayLarge
+                        font.pixelSize: Theme.panelValueSize
                         font.family: Theme.fontMono
                         font.bold: true
                         Layout.alignment: Qt.AlignHCenter
@@ -97,17 +97,17 @@ Item {
                     Text {
                         text: "CLOCK"
                         color: Theme.fg
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         font.bold: true
-                        opacity: Theme.opacitySecondaryLow
+                        opacity: Theme.opacitySecondary
                         Layout.alignment: Qt.AlignHCenter
                     }
 
                     Text {
                         text: root.clockText(Stats.cpuClock)
                         color: Theme.selFg
-                        font.pixelSize: Theme.fontSizeDisplayLarge
+                        font.pixelSize: Theme.panelValueSize
                         font.family: Theme.fontMono
                         font.bold: true
                         Layout.alignment: Qt.AlignHCenter
@@ -128,17 +128,17 @@ Item {
                     Text {
                         text: "TEMP"
                         color: Theme.fg
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         font.bold: true
-                        opacity: Theme.opacitySecondaryLow
+                        opacity: Theme.opacitySecondary
                         Layout.alignment: Qt.AlignHCenter
                     }
 
                     Text {
                         text: Stats.cpuTemp >= 0 ? Stats.cpuTemp + "°C" : "--"
                         color: Stats.cpuTemp >= 85 ? Theme.red : Theme.selFg
-                        font.pixelSize: Theme.fontSizeDisplayLarge
+                        font.pixelSize: Theme.panelValueSize
                         font.family: Theme.fontMono
                         font.bold: true
                         Layout.alignment: Qt.AlignHCenter
@@ -159,17 +159,17 @@ Item {
                     Text {
                         text: "POWER"
                         color: Theme.fg
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         font.bold: true
-                        opacity: Theme.opacitySecondaryLow
+                        opacity: Theme.opacitySecondary
                         Layout.alignment: Qt.AlignHCenter
                     }
 
                     Text {
                         text: root.powerText()
                         color: Theme.selFg
-                        font.pixelSize: Theme.fontSizeDisplayLarge
+                        font.pixelSize: Theme.panelValueSize
                         font.family: Theme.fontMono
                         font.bold: true
                         Layout.alignment: Qt.AlignHCenter
@@ -212,7 +212,7 @@ Item {
                                 text: coreDelegate.name + (coreDelegate.clock >= 0 ? "  " + root.clockText(coreDelegate.clock) : "")
                                 color: Theme.fg
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeLabel
+                                font.pixelSize: Theme.panelBodySize
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
@@ -221,7 +221,7 @@ Item {
                                 text: coreDelegate.usage + "%"
                                 color: Theme.selFg
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeLabel
+                                font.pixelSize: Theme.panelBodySize
                                 font.bold: true
                             }
                         }

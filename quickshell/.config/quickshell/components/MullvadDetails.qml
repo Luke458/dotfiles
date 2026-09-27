@@ -76,7 +76,7 @@ Item {
                     Text {
                         text: "MULLVAD VPN"
                         color: Theme.selFg
-                        font.pixelSize: Theme.fontSizeHeadingLarge
+                        font.pixelSize: Theme.panelTitleSize
                         font.family: Theme.fontMono
                         font.bold: true
                     }
@@ -84,8 +84,8 @@ Item {
                     Text {
                         text: Mullvad.summary
                         color: Theme.fg
-                        opacity: Theme.opacityStrong
-                        font.pixelSize: Theme.fontSizeBody
+                        opacity: Theme.opacitySecondary
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -105,7 +105,7 @@ Item {
                         anchors.centerIn: parent
                         text: Mullvad.stateLabel
                         color: root.statusColor()
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         font.bold: true
                     }
@@ -162,7 +162,7 @@ Item {
                     Text {
                         text: "LOCATION"
                         color: Theme.selFg
-                        font.pixelSize: Theme.fontSizeLabel
+                        font.pixelSize: Theme.panelBodySize
                         font.family: Theme.fontMono
                         font.bold: true
                         Layout.fillWidth: true
@@ -171,8 +171,8 @@ Item {
                     Text {
                         text: Mullvad.relayConstraintLabel
                         color: Theme.fg
-                        opacity: Theme.opacitySecondaryHigh
-                        font.pixelSize: Theme.fontSizeSmall
+                        opacity: Theme.opacitySecondary
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         elide: Text.ElideRight
                         Layout.maximumWidth: 260
@@ -230,7 +230,7 @@ Item {
                                     text: locationButton.modelData.kind === "any" ? "AUTO" : locationButton.modelData.kind.toUpperCase()
                                     color: locationButton.selected ? Theme.selBg : Theme.fg
                                     opacity: Theme.opacityProminent
-                                    font.pixelSize: Theme.fontSizeCaption
+                                    font.pixelSize: Theme.panelCaptionSize
                                     font.family: Theme.fontMono
                                     font.bold: true
                                     Layout.preferredWidth: 48
@@ -239,7 +239,7 @@ Item {
                                 Text {
                                     text: locationButton.modelData.label
                                     color: locationButton.selected ? Theme.selFg : Theme.fg
-                                    font.pixelSize: Theme.fontSizeLabel
+                                    font.pixelSize: Theme.panelBodySize
                                     font.family: Theme.fontMono
                                     font.bold: locationButton.selected
                                     elide: Text.ElideRight
@@ -250,7 +250,7 @@ Item {
                                     text: locationButton.modelData.sublabel
                                     color: Theme.fg
                                     opacity: Theme.opacityMedium
-                                    font.pixelSize: Theme.fontSizeSmall
+                                    font.pixelSize: Theme.panelCaptionSize
                                     font.family: Theme.fontMono
                                 }
                             }
@@ -268,7 +268,7 @@ Item {
                 Text {
                     text: "CONNECTION"
                     color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     font.bold: true
                 }
@@ -293,7 +293,7 @@ Item {
                         Text {
                             text: connectionSetting.modelData.label
                             color: Theme.fg
-                            font.pixelSize: Theme.fontSizeBody
+                            font.pixelSize: Theme.panelCaptionSize
                             font.family: Theme.fontMono
                             Layout.fillWidth: true
                         }
@@ -315,7 +315,7 @@ Item {
                 Text {
                     text: "ACCOUNT"
                     color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     font.bold: true
                 }
@@ -330,13 +330,13 @@ Item {
                         text: "DEVICE"
                         color: Theme.fg
                         opacity: Theme.opacityMedium
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                     }
                     Text {
                         text: Mullvad.deviceName.length > 0 ? Mullvad.deviceName : "Unknown"
                         color: Theme.fg
-                        font.pixelSize: Theme.fontSizeBody
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -346,13 +346,13 @@ Item {
                         text: "ACCOUNT"
                         color: Theme.fg
                         opacity: Theme.opacityMedium
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                     }
                     Text {
                         text: Mullvad.accountMasked.length > 0 ? Mullvad.accountMasked : "Not signed in"
                         color: Theme.fg
-                        font.pixelSize: Theme.fontSizeBody
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -362,13 +362,13 @@ Item {
                         text: "PAID UNTIL"
                         color: Theme.fg
                         opacity: Theme.opacityMedium
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                     }
                     Text {
                         text: Mullvad.accountExpiry.length > 0 ? Mullvad.accountExpiry : "Unknown"
                         color: Theme.fg
-                        font.pixelSize: Theme.fontSizeBody
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -378,13 +378,13 @@ Item {
                         text: "VERSION"
                         color: Theme.fg
                         opacity: Theme.opacityMedium
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                     }
                     Text {
                         text: Mullvad.version.length > 0 ? Mullvad.version + (Mullvad.supported ? "" : " unsupported") : "Unknown"
                         color: Mullvad.supported ? Theme.fg : Theme.yellow
-                        font.pixelSize: Theme.fontSizeBody
+                        font.pixelSize: Theme.panelCaptionSize
                         font.family: Theme.fontMono
                         elide: Text.ElideRight
                         Layout.fillWidth: true

@@ -55,7 +55,7 @@ Item {
                     Layout.fillWidth: true
                     text: modelData
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter

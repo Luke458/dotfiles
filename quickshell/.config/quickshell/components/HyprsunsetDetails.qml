@@ -21,7 +21,7 @@ Item {
             Text {
                 text: "HYPRSUNSET"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeTitle
+                font.pixelSize: Theme.panelTitleSize
                 font.family: Theme.fontMono
                 font.bold: true
                 Layout.fillWidth: true
@@ -54,14 +54,14 @@ Item {
                 Text {
                     text: "Temperature"
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                 }
                 Item { Layout.fillWidth: true }
                 Text {
                     text: root.hyprsunset.temperature + "K"
                     color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     font.bold: true
                 }
@@ -96,14 +96,14 @@ Item {
                 Text {
                     text: "Gamma"
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                 }
                 Item { Layout.fillWidth: true }
                 Text {
                     text: root.hyprsunset.gamma + "%"
                     color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     font.bold: true
                 }

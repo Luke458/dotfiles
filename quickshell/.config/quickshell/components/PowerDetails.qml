@@ -48,7 +48,7 @@ Item {
                     Text {
                         text: btn.modelData.label
                         color: btn.hovered ? Theme.selFg : Theme.fg
-                        font.pixelSize: Theme.fontSizeBar
+                        font.pixelSize: Theme.panelBodySize
                         font.family: Theme.fontMono
                         font.bold: true
                     }

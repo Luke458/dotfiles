@@ -33,7 +33,7 @@ Item {
                     width: parent.width
                     text: "MASTER VOLUME"
                     color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeHeadingLarge
+                    font.pixelSize: Theme.panelTitleSize
                     font.family: Theme.fontMono
                     font.bold: true
                     horizontalAlignment: Text.AlignHCenter
@@ -63,7 +63,7 @@ Item {
                         onMoved: Volume.setVolume(value)
 
                         Binding on value {
-                    restoreMode: Binding.RestoreNone
+                            restoreMode: Binding.RestoreNone
                             value: Volume.volume
                             when: !masterSlider.pressed
                         }
@@ -71,7 +71,7 @@ Item {
 
                     Text {
                         text: Volume.volumePercent + "%"
-                        color: Theme.fg; font.pixelSize: Theme.fontSizeBar; font.family: Theme.fontMono; font.bold: true
+                        color: Theme.fg; font.pixelSize: Theme.panelBodySize; font.family: Theme.fontMono; font.bold: true
                         Layout.preferredWidth: 40
                     }
                 }
@@ -83,7 +83,7 @@ Item {
                 text: "No audio output available"
                 color: Theme.fg
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeLabel
+                font.pixelSize: Theme.panelBodySize
                 wrapMode: Text.Wrap
             }
 
@@ -98,7 +98,7 @@ Item {
                 Text {
                     width: parent.width
                     text: "APPLICATIONS"
-                    color: Theme.selFg; font.pixelSize: Theme.fontSizeLabel; font.family: Theme.fontMono; font.bold: true; horizontalAlignment: Text.AlignHCenter
+                    color: Theme.selFg; font.pixelSize: Theme.panelBodySize; font.family: Theme.fontMono; font.bold: true; horizontalAlignment: Text.AlignHCenter
                 }
 
                 Repeater {
@@ -137,7 +137,7 @@ Item {
 
                             Text {
                                 text: appDelegate.appName.toUpperCase()
-                                color: Theme.fg; font.pixelSize: Theme.fontSizeLabel; font.family: Theme.fontMono; Layout.fillWidth: true; elide: Text.ElideRight
+                                color: Theme.fg; font.pixelSize: Theme.panelBodySize; font.family: Theme.fontMono; Layout.fillWidth: true; elide: Text.ElideRight
                             }
 
                             StyledButton {
@@ -152,7 +152,7 @@ Item {
 
                             Text {
                                 text: Math.round(((appDelegate.modelData && appDelegate.modelData.audio) ? appDelegate.modelData.audio.volume : 0) * 100) + "%"
-                                color: Theme.fg; font.pixelSize: Theme.fontSizeBody; font.family: Theme.fontMono
+                                color: Theme.fg; font.pixelSize: Theme.panelCaptionSize; font.family: Theme.fontMono
                             }
                         }
 
@@ -165,7 +165,7 @@ Item {
                             onMoved: Volume.setAppVolume(appDelegate.appName, value)
 
                             Binding on value {
-                    restoreMode: Binding.RestoreNone
+                                restoreMode: Binding.RestoreNone
                                 value: (appDelegate.modelData && appDelegate.modelData.audio) ? appDelegate.modelData.audio.volume : 0
                                 when: !appSlider.pressed
                             }
@@ -184,7 +184,7 @@ Item {
                 Text {
                     width: parent.width
                     text: "OUTPUT DEVICES"
-                    color: Theme.selFg; font.pixelSize: Theme.fontSizeLabel; font.family: Theme.fontMono; font.bold: true; horizontalAlignment: Text.AlignHCenter
+                    color: Theme.selFg; font.pixelSize: Theme.panelBodySize; font.family: Theme.fontMono; font.bold: true; horizontalAlignment: Text.AlignHCenter
                 }
 
                 Repeater {
@@ -216,7 +216,7 @@ Item {
                             Text {
                                 text: Volume.getNodeName(sinkBtn.modelData).toUpperCase()
                                 color: (Volume.audioSink && Volume.audioSink.id === sinkBtn.modelData.id) ? Theme.selFg : Theme.fg
-                                font.pixelSize: Theme.fontSizeBody; font.family: Theme.fontMono; font.bold: true; elide: Text.ElideRight; Layout.fillWidth: true
+                                font.pixelSize: Theme.panelCaptionSize; font.family: Theme.fontMono; font.bold: true; elide: Text.ElideRight; Layout.fillWidth: true
                             }
                         }
                     }

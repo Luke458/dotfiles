@@ -59,7 +59,7 @@ Item {
                         text: "PODMAN QUADLETS"
                         color: Theme.selFg
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeHeadingLarge
+                        font.pixelSize: Theme.panelTitleSize
                         font.bold: true
                     }
 
@@ -68,9 +68,9 @@ Item {
                             ? Services.PodmanQuadlets.healthy + " of " + Services.PodmanQuadlets.total + " generated units healthy"
                             : "Waiting for user-systemd and Podman"
                         color: Theme.fg
-                        opacity: Theme.opacityStrong
+                        opacity: Theme.opacitySecondary
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeBody
+                        font.pixelSize: Theme.panelCaptionSize
                     }
                 }
 
@@ -122,7 +122,7 @@ Item {
                                 text: summaryCard.modelData.value
                                 color: Theme.selFg
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeDisplaySmall
+                                font.pixelSize: Theme.panelValueSize
                                 font.bold: true
                             }
 
@@ -130,9 +130,9 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: summaryCard.modelData.label
                                 color: Theme.fg
-                                opacity: Theme.opacityStrong
+                                opacity: Theme.opacitySecondary
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeCaption
+                                font.pixelSize: Theme.panelCaptionSize
                             }
                         }
                     }
@@ -145,7 +145,7 @@ Item {
                 text: Services.PodmanQuadlets.errorMessage
                 color: Theme.negative
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 wrapMode: Text.Wrap
             }
 
@@ -188,7 +188,7 @@ Item {
                                     text: unitRow.modelData.name
                                     color: Theme.selFg
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeLabel
+                                    font.pixelSize: Theme.panelBodySize
                                     font.bold: true
                                     elide: Text.ElideRight
                                 }
@@ -199,9 +199,9 @@ Item {
                                         + (unitRow.modelData.status || unitRow.modelData.subState)
                                         + (unitRow.modelData.image ? " · " + unitRow.modelData.image : "")
                                     color: Theme.fg
-                                    opacity: Theme.opacityStrong
+                                    opacity: Theme.opacitySecondary
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeSmall
+                                    font.pixelSize: Theme.panelCaptionSize
                                     elide: Text.ElideRight
                                 }
                             }
@@ -215,7 +215,7 @@ Item {
                                     text: unitRow.modelData.cpu || "—"
                                     color: Theme.selFg
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeLabel
+                                    font.pixelSize: Theme.panelBodySize
                                     horizontalAlignment: Text.AlignRight
                                 }
 
@@ -223,9 +223,9 @@ Item {
                                     Layout.fillWidth: true
                                     text: "CPU"
                                     color: Theme.fg
-                                    opacity: Theme.opacityStrong
+                                    opacity: Theme.opacitySecondary
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeCaption
+                                    font.pixelSize: Theme.panelCaptionSize
                                     horizontalAlignment: Text.AlignRight
                                 }
                             }
@@ -239,7 +239,7 @@ Item {
                                     text: unitRow.modelData.memory || "—"
                                     color: Theme.selFg
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeLabel
+                                    font.pixelSize: Theme.panelBodySize
                                     horizontalAlignment: Text.AlignRight
                                 }
 
@@ -247,9 +247,9 @@ Item {
                                     Layout.fillWidth: true
                                     text: "MEMORY"
                                     color: Theme.fg
-                                    opacity: Theme.opacityStrong
+                                    opacity: Theme.opacitySecondary
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeCaption
+                                    font.pixelSize: Theme.panelCaptionSize
                                     horizontalAlignment: Text.AlignRight
                                 }
                             }
@@ -268,7 +268,7 @@ Item {
                                     text: root.stateText(unitRow.modelData)
                                     color: root.statusColor(unitRow.modelData)
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeCaption
+                                    font.pixelSize: Theme.panelCaptionSize
                                     font.bold: true
                                 }
                             }
@@ -283,9 +283,9 @@ Item {
                 Text {
                     text: "Read-only · user quadlets"
                     color: Theme.fg
-                    opacity: Theme.opacitySubtle
+                    opacity: Theme.opacitySecondary
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeCaption
+                    font.pixelSize: Theme.panelCaptionSize
                 }
 
                 Item { Layout.fillWidth: true }
@@ -295,9 +295,9 @@ Item {
                         ? "Updated " + Qt.formatTime(Services.PodmanQuadlets.lastUpdated, "hh:mm:ss")
                         : "Not updated"
                     color: Theme.fg
-                    opacity: Theme.opacitySubtle
+                    opacity: Theme.opacitySecondary
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeCaption
+                    font.pixelSize: Theme.panelCaptionSize
                 }
             }
         }

@@ -53,16 +53,16 @@ Item {
 
             WeatherText {
                 text: metricTile.label
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 font.bold: true
-                opacity: Theme.opacitySecondaryLow
+                opacity: Theme.opacitySecondary
                 Layout.alignment: Qt.AlignHCenter
             }
 
             WeatherText {
                 text: metricTile.value
                 color: metricTile.valueColor
-                font.pixelSize: Theme.fontSizeBanner
+                font.pixelSize: Theme.panelValueSize
                 font.bold: true
                 Layout.alignment: Qt.AlignHCenter
             }
@@ -88,7 +88,7 @@ Item {
 
             WeatherText {
                 text: hourlyTile.timeLabel
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 font.bold: true
                 opacity: Theme.opacitySecondary
                 Layout.alignment: Qt.AlignHCenter
@@ -96,14 +96,14 @@ Item {
 
             Text {
                 text: hourlyTile.icon
-                font.pixelSize: Theme.fontSizeValueMedium
+                font.pixelSize: Theme.panelReadoutSize
                 Layout.alignment: Qt.AlignHCenter
             }
 
             WeatherText {
                 text: hourlyTile.temperature
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeHeadingLarge
+                font.pixelSize: Theme.panelTitleSize
                 font.bold: true
                 Layout.alignment: Qt.AlignHCenter
             }
@@ -111,7 +111,7 @@ Item {
             WeatherText {
                 text: hourlyTile.precip
                 color: hourlyTile.accentColor
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 Layout.alignment: Qt.AlignHCenter
             }
         }
@@ -163,27 +163,27 @@ Item {
                 WeatherText {
                     text: dayRow.dayName
                     color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeTitle
+                    font.pixelSize: Theme.panelBodySize
                     font.bold: true
                 }
 
                 WeatherText {
                     text: dayRow.dateLabel
-                    font.pixelSize: Theme.fontSizeBody
+                    font.pixelSize: Theme.panelCaptionSize
                     opacity: Theme.opacityMedium
                 }
             }
 
             Text {
                 text: dayRow.icon
-                font.pixelSize: Theme.fontSizeValueSmall
+                font.pixelSize: Theme.panelValueSize
                 Layout.preferredWidth: 30
                 horizontalAlignment: Text.AlignHCenter
             }
 
             WeatherText {
                 text: dayRow.condition
-                font.pixelSize: Theme.fontSizeBar
+                font.pixelSize: Theme.panelBodySize
                 Layout.fillWidth: true
                 elide: Text.ElideRight
             }
@@ -210,7 +210,7 @@ Item {
             WeatherText {
                 text: dayRow.temperatureRange
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeTitle
+                font.pixelSize: Theme.panelBodySize
                 font.bold: true
                 Layout.preferredWidth: 76
                 Layout.minimumWidth: 76
@@ -220,7 +220,7 @@ Item {
             WeatherText {
                 text: dayRow.precip
                 color: dayRow.accentColor
-                font.pixelSize: Theme.fontSizeLabel
+                font.pixelSize: Theme.panelBodySize
                 Layout.preferredWidth: 44
                 horizontalAlignment: Text.AlignRight
             }
@@ -351,7 +351,7 @@ Item {
                     WeatherText {
                         text: Weather.locationName.toUpperCase()
                         color: Theme.selFg
-                        font.pixelSize: Theme.fontSizeTitle
+                        font.pixelSize: Theme.panelTitleSize
                         font.bold: true
                         Layout.alignment: Qt.AlignHCenter
                     }
@@ -362,14 +362,14 @@ Item {
 
                         Text {
                             text: Weather.getIcon(Weather.weatherCode, Weather.isDay)
-                            font.pixelSize: Theme.fontSizeHero
+                            font.pixelSize: Theme.panelReadoutSize
                             Layout.alignment: Qt.AlignVCenter
                         }
 
                         WeatherText {
                             text: Weather.temperature
                             color: Theme.selFg
-                            font.pixelSize: Theme.fontSizeHero
+                            font.pixelSize: Theme.panelReadoutSize
                             font.bold: true
                             Layout.alignment: Qt.AlignVCenter
                         }
@@ -378,7 +378,7 @@ Item {
                     WeatherText {
                         text: Weather.condition + "  •  " + root.dailyRange(0, " / ")
                         color: root.accent
-                        font.pixelSize: Theme.fontSizeBar
+                        font.pixelSize: Theme.panelBodySize
                         font.bold: true
                         Layout.alignment: Qt.AlignHCenter
                     }
@@ -475,7 +475,7 @@ Item {
 
         WeatherText {
             text: Weather.loading ? "LOADING..." : "ERROR"
-            font.pixelSize: Theme.fontSizeTitle
+            font.pixelSize: Theme.panelBodySize
             Layout.alignment: Qt.AlignHCenter
         }
 
@@ -484,7 +484,7 @@ Item {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             color: Theme.red
-            font.pixelSize: Theme.fontSizeLabel
+            font.pixelSize: Theme.panelBodySize
             visible: Weather.error !== ""
             Layout.alignment: Qt.AlignHCenter
         }

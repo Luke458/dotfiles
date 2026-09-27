@@ -19,7 +19,7 @@ Item {
 
         SectionHeading {
             text: "NOTIFICATIONS"
-            font.pixelSize: Theme.fontSizeTitle
+            font.pixelSize: Theme.panelTitleSize
             Layout.fillWidth: true
         }
 
@@ -70,7 +70,7 @@ Item {
                     height: visible ? 100 : 0
                     text: "NO NOTIFICATIONS"
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeTitle
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

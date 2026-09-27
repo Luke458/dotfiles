@@ -87,6 +87,14 @@ QtObject {
     readonly property int menuPointSize: token("menuPointSize", 9)
     readonly property int menuIconPointSize: token("menuIconPointSize", 10)
 
+    // Panel roles: use these instead of choosing a numeric step per module.
+    // Derived from existing overrideable tokens so custom themes stay coherent.
+    readonly property int panelTitleSize: fontSizeTitle
+    readonly property int panelBodySize: fontSizeLabel
+    readonly property int panelCaptionSize: fontSizeBody
+    readonly property int panelValueSize: fontSizeDisplaySmall
+    readonly property int panelReadoutSize: Math.round(panelTitleSize * 2)
+
     // DWM-inspired base palette (suckless dwm config.def.h)
     readonly property color transparent: "transparent"
     readonly property color bg: token("bg", bgSolid)

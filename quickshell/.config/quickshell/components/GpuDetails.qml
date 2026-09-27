@@ -221,7 +221,7 @@ Item {
             Text {
                 text: Stats.gpuModel || "AMD GPU"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeHeading
+                font.pixelSize: Theme.panelTitleSize
                 font.family: Theme.fontMono
                 font.bold: true
                 horizontalAlignment: Text.AlignHCenter
@@ -251,17 +251,17 @@ Item {
                             Text {
                                 text: headerMetric.modelData
                                 color: Theme.fg
-                                font.pixelSize: Theme.fontSizeSmall
+                                font.pixelSize: Theme.panelCaptionSize
                                 font.family: Theme.fontMono
                                 font.bold: true
-                                opacity: Theme.opacitySecondaryLow
+                                opacity: Theme.opacitySecondary
                                 Layout.alignment: Qt.AlignHCenter
                             }
 
                             Text {
                                 text: root.getHeaderValue(headerMetric.index)
                                 color: root.getHeaderColor(headerMetric.index)
-                                font.pixelSize: Theme.fontSizeDisplay
+                                font.pixelSize: Theme.panelValueSize
                                 font.family: Theme.fontMono
                                 font.bold: true
                                 Layout.alignment: Qt.AlignHCenter
@@ -308,7 +308,7 @@ Item {
                                 text: metricDelegate.modelData
                                 color: Theme.fg
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeLabel
+                                font.pixelSize: Theme.panelBodySize
                                 Layout.fillWidth: true
                             }
 
@@ -316,7 +316,7 @@ Item {
                                 text: root.getMetricDetail(metricDelegate.index)
                                 color: Theme.selFg
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeLabel
+                                font.pixelSize: Theme.panelBodySize
                                 font.bold: true
                             }
                         }
@@ -353,7 +353,7 @@ Item {
             Text {
                 text: "THERMALS"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeLabel
+                font.pixelSize: Theme.panelBodySize
                 font.family: Theme.fontMono
                 font.bold: true
                 Layout.fillWidth: true
@@ -381,7 +381,7 @@ Item {
                             text: thermalDelegate.modelData
                             color: Theme.fg
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeLabel
+                            font.pixelSize: Theme.panelBodySize
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                         }
@@ -390,7 +390,7 @@ Item {
                             text: root.getThermalValue(thermalDelegate.index)
                             color: root.getThermalHot(thermalDelegate.index) ? Theme.red : Theme.selFg
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeLabel
+                            font.pixelSize: Theme.panelBodySize
                             font.bold: true
                         }
                     }
@@ -400,7 +400,7 @@ Item {
             Text {
                 text: "CLOCKS / POWER"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeLabel
+                font.pixelSize: Theme.panelBodySize
                 font.family: Theme.fontMono
                 font.bold: true
                 Layout.fillWidth: true
@@ -428,7 +428,7 @@ Item {
                             text: clockDelegate.modelData
                             color: Theme.fg
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeLabel
+                            font.pixelSize: Theme.panelBodySize
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                         }
@@ -437,7 +437,7 @@ Item {
                             text: root.getClockValue(clockDelegate.index)
                             color: Theme.selFg
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeLabel
+                            font.pixelSize: Theme.panelBodySize
                             font.bold: true
                         }
                     }
@@ -447,7 +447,7 @@ Item {
             Text {
                 text: "VRAM PROCESSES"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeLabel
+                font.pixelSize: Theme.panelBodySize
                 font.family: Theme.fontMono
                 font.bold: true
                 Layout.fillWidth: true
@@ -478,7 +478,7 @@ Item {
                                 text: processDelegate.name
                                 color: Theme.fg
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeLabel
+                                font.pixelSize: Theme.panelBodySize
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
                             }
@@ -487,7 +487,7 @@ Item {
                                 text: root.vramProcessText(processDelegate.bytes, processDelegate.usage)
                                 color: Theme.selFg
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeLabel
+                                font.pixelSize: Theme.panelBodySize
                                 font.bold: true
                             }
                         }
@@ -525,7 +525,7 @@ Item {
                     text: "NO PROCESS VRAM DATA"
                     color: Theme.fg
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeBody
+                    font.pixelSize: Theme.panelCaptionSize
                     opacity: Theme.opacitySecondary
                     visible: Stats.gpuVramProcessesModel.count === 0
                     Layout.alignment: Qt.AlignHCenter
@@ -535,7 +535,7 @@ Item {
             Text {
                 text: "DEVICE"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeLabel
+                font.pixelSize: Theme.panelBodySize
                 font.family: Theme.fontMono
                 font.bold: true
                 Layout.fillWidth: true
@@ -561,7 +561,7 @@ Item {
                             text: deviceDelegate.modelData
                             color: Theme.fg
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeLabel
+                            font.pixelSize: Theme.panelBodySize
                             Layout.preferredWidth: 100
                         }
 
@@ -569,7 +569,7 @@ Item {
                             text: root.getDeviceValue(deviceDelegate.index)
                             color: Theme.selFg
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeLabel
+                            font.pixelSize: Theme.panelBodySize
                             font.bold: true
                             Layout.fillWidth: true
                             elide: Text.ElideRight
@@ -590,7 +590,7 @@ Item {
                 text: Stats.gpuMetricsAvailable ? "AMDGPU_TOP METRICS / SYSFS MEMORY" : "SYSFS METRICS"
                 color: Theme.fg
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: Theme.panelCaptionSize
                 opacity: Theme.opacityMedium
                 Layout.alignment: Qt.AlignHCenter
                 visible: Stats.gpuAvailable

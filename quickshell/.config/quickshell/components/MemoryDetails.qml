@@ -29,7 +29,7 @@ Item {
             Text {
                 text: "MEMORY · " + Stats.memUsage + "% USED"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeHeading
+                font.pixelSize: Theme.panelTitleSize
                 font.family: Theme.fontMono
                 font.bold: true
                 Layout.alignment: Qt.AlignHCenter
@@ -54,7 +54,7 @@ Item {
                             text: memoryHog.name
                             color: Theme.fg
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeBar
+                            font.pixelSize: Theme.panelBodySize
                             Layout.fillWidth: true 
                             elide: Text.ElideRight
                         }
@@ -63,7 +63,7 @@ Item {
                             text: Stats.formatBytes(memoryHog.rss * 1024) + " (" + memoryHog.usage.toFixed(1) + "%)"
                             color: Theme.selFg
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeLabel
+                            font.pixelSize: Theme.panelBodySize
                             font.bold: true
                         }
                     }

@@ -127,7 +127,7 @@ Rectangle {
                     id: summaryText
                     text: root.summary
                     color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeTitle
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     font.bold: true
                     textFormat: Text.PlainText
@@ -140,7 +140,7 @@ Rectangle {
                 Text {
                     text: root.time
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     opacity: Theme.opacityMuted
                     Layout.alignment: Qt.AlignTop | Qt.AlignRight
@@ -152,7 +152,7 @@ Rectangle {
                 id: bodyText
                 text: root.body
                 color: Theme.fg
-                font.pixelSize: Theme.fontSizeLabel
+                font.pixelSize: Theme.panelBodySize
                 font.family: Theme.fontMono
                 textFormat: Text.PlainText
                 wrapMode: Text.Wrap
@@ -173,7 +173,7 @@ Rectangle {
                     id: expandLabel
                     text: root.expanded ? "Collapse ▲" : "Expand ▼"
                     color: Theme.selBg
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: Theme.panelCaptionSize
                     font.family: Theme.fontMono
                     font.bold: true
                 }

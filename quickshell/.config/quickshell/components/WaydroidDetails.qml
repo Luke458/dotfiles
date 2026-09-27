@@ -84,7 +84,7 @@ Item {
                         text: "WAYDROID"
                         color: Theme.selFg
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeHeadingLarge
+                        font.pixelSize: Theme.panelTitleSize
                         font.bold: true
                     }
 
@@ -92,9 +92,9 @@ Item {
                         text: "Service " + (Services.Waydroid.serviceActive ? "active" : "stopped")
                             + " · Android session " + (Services.Waydroid.sessionRunning ? "running" : "stopped")
                         color: Theme.fg
-                        opacity: Theme.opacityStrong
+                        opacity: Theme.opacitySecondary
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeBody
+                        font.pixelSize: Theme.panelCaptionSize
                     }
                 }
 
@@ -112,7 +112,7 @@ Item {
                         text: root.stateLabel()
                         color: root.statusColor()
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeCaption
+                        font.pixelSize: Theme.panelCaptionSize
                         font.bold: true
                     }
                 }
@@ -167,7 +167,7 @@ Item {
                                 text: statusCard.modelData.value
                                 color: statusCard.modelData.color
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeLabel
+                                font.pixelSize: Theme.panelBodySize
                                 font.bold: true
                             }
 
@@ -175,9 +175,9 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: statusCard.modelData.label
                                 color: Theme.fg
-                                opacity: Theme.opacityStrong
+                                opacity: Theme.opacitySecondary
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeCaption
+                                font.pixelSize: Theme.panelCaptionSize
                             }
                         }
                     }
@@ -242,7 +242,7 @@ Item {
                 text: Services.Waydroid.errorMessage
                 color: Theme.negative
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 wrapMode: Text.Wrap
             }
 
@@ -252,7 +252,7 @@ Item {
                 text: Services.Waydroid.lastMessage
                 color: Theme.positive
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 wrapMode: Text.Wrap
             }
 
@@ -264,7 +264,7 @@ Item {
                     text: "APPLICATIONS"
                     color: Theme.selFg
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.bold: true
                 }
 
@@ -273,7 +273,7 @@ Item {
                     color: Theme.fg
                     opacity: Theme.opacitySecondary
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: Theme.panelCaptionSize
                 }
 
                 Item { Layout.fillWidth: true }
@@ -352,7 +352,7 @@ Item {
                                     text: appButton.modelData.name
                                     color: Theme.selFg
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeLabel
+                                    font.pixelSize: Theme.panelBodySize
                                     font.bold: true
                                     elide: Text.ElideRight
                                 }
@@ -364,7 +364,7 @@ Item {
                                     color: Theme.fg
                                     opacity: Theme.opacitySecondary
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeCaption
+                                    font.pixelSize: Theme.panelCaptionSize
                                     elide: Text.ElideRight
                                 }
                             }
@@ -373,7 +373,7 @@ Item {
                                 text: "LAUNCH"
                                 color: appButton.hovered ? Theme.selFg : Theme.fg
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeCaption
+                                font.pixelSize: Theme.panelCaptionSize
                                 font.bold: true
                             }
                         }
@@ -389,7 +389,7 @@ Item {
                     color: Theme.fg
                     opacity: Theme.opacitySecondary
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeBody
+                    font.pixelSize: Theme.panelCaptionSize
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
                     topPadding: Theme.spacingSection
@@ -405,9 +405,9 @@ Item {
                         ? Services.Waydroid.vendorType + " · " + Services.Waydroid.containerState
                         : Services.Waydroid.containerState
                     color: Theme.fg
-                    opacity: Theme.opacitySubtle
+                    opacity: Theme.opacitySecondary
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeCaption
+                    font.pixelSize: Theme.panelCaptionSize
                 }
 
                 Item { Layout.fillWidth: true }
@@ -417,9 +417,9 @@ Item {
                         ? "Updated " + Qt.formatTime(Services.Waydroid.lastUpdated, "hh:mm:ss")
                         : "Not updated"
                     color: Theme.fg
-                    opacity: Theme.opacitySubtle
+                    opacity: Theme.opacitySecondary
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeCaption
+                    font.pixelSize: Theme.panelCaptionSize
                 }
             }
         }

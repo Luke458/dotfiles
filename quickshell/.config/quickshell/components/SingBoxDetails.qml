@@ -90,7 +90,7 @@ Item {
                         text: "SING-BOX ROUTES"
                         color: Theme.selFg
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeHeadingLarge
+                        font.pixelSize: Theme.panelTitleSize
                         font.bold: true
                     }
 
@@ -99,9 +99,9 @@ Item {
                             + " · BYPASS " + Services.SingBox.bypassServiceState.toUpperCase()
                             + " · " + Services.SingBox.total + " entries"
                         color: Theme.fg
-                        opacity: Theme.opacityStrong
+                        opacity: Theme.opacitySecondary
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeBody
+                        font.pixelSize: Theme.panelCaptionSize
                     }
                 }
 
@@ -130,7 +130,7 @@ Item {
                     text: "ADD DOMAIN OR RULE"
                     color: Theme.selFg
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeLabel
+                    font.pixelSize: Theme.panelBodySize
                     font.bold: true
                 }
 
@@ -183,7 +183,7 @@ Item {
                     color: Theme.fg
                     opacity: Theme.opacitySecondary
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeCaption
+                    font.pixelSize: Theme.panelCaptionSize
                     wrapMode: Text.Wrap
                 }
             }
@@ -194,7 +194,7 @@ Item {
                 text: Services.SingBox.errorMessage
                 color: Theme.negative
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 wrapMode: Text.Wrap
             }
 
@@ -205,7 +205,7 @@ Item {
                 text: Services.SingBox.lastMessage
                 color: Theme.positive
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 wrapMode: Text.Wrap
             }
 
@@ -244,7 +244,7 @@ Item {
                                     text: Services.SingBox.routeLabel(routeCard.modelData.name)
                                     color: Theme.selFg
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeLabel
+                                    font.pixelSize: Theme.panelBodySize
                                     font.bold: true
                                 }
 
@@ -253,9 +253,9 @@ Item {
                                 Text {
                                     text: routeCard.modelData.count + (routeCard.modelData.count === 1 ? " ENTRY" : " ENTRIES")
                                     color: Theme.fg
-                                    opacity: Theme.opacityStrong
+                                    opacity: Theme.opacitySecondary
                                     font.family: Theme.fontMono
-                                    font.pixelSize: Theme.fontSizeCaption
+                                    font.pixelSize: Theme.panelCaptionSize
                                 }
                             }
 
@@ -265,7 +265,7 @@ Item {
                                 color: Theme.fg
                                 opacity: Theme.opacityMedium
                                 font.family: Theme.fontMono
-                                font.pixelSize: Theme.fontSizeBody
+                                font.pixelSize: Theme.panelCaptionSize
                             }
 
                             Repeater {
@@ -290,7 +290,7 @@ Item {
                                             text: entryRow.modelData.line
                                             color: Theme.selFg
                                             font.family: Theme.fontMono
-                                            font.pixelSize: Theme.fontSizeBody
+                                            font.pixelSize: Theme.panelCaptionSize
                                             elide: Text.ElideMiddle
                                         }
 
@@ -299,7 +299,7 @@ Item {
                                             color: Theme.fg
                                             opacity: Theme.opacityMedium
                                             font.family: Theme.fontMono
-                                            font.pixelSize: Theme.fontSizeCaption
+                                            font.pixelSize: Theme.panelCaptionSize
                                         }
 
                                         StyledButton {
@@ -333,7 +333,7 @@ Item {
                             : "LIVE RULE SETS NEED APPLY"
                         color: Services.SingBox.liveSynchronized ? Theme.positive : Theme.yellow
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeCaption
+                        font.pixelSize: Theme.panelCaptionSize
                         font.bold: true
                     }
 
@@ -344,7 +344,7 @@ Item {
                         color: Services.SingBox.deploymentSynchronized
                             ? Theme.positive : Theme.yellow
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeCaption
+                        font.pixelSize: Theme.panelCaptionSize
                         font.bold: true
                     }
 
@@ -355,7 +355,7 @@ Item {
                         color: Theme.fg
                         opacity: Theme.opacitySecondary
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeCaption
+                        font.pixelSize: Theme.panelCaptionSize
                     }
                 }
 
@@ -372,9 +372,9 @@ Item {
                 width: parent.width - Theme.panelPadding * 2
                 text: Services.SingBox.sourceDir
                 color: Theme.fg
-                opacity: Theme.opacitySubtle
+                opacity: Theme.opacitySecondary
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeCaption
+                font.pixelSize: Theme.panelCaptionSize
                 elide: Text.ElideMiddle
             }
         }

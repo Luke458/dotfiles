@@ -41,7 +41,7 @@ Item {
             Text {
                 text: "₿  Bitcoin"
                 color: Theme.selFg
-                font.pixelSize: Theme.fontSizeDisplaySmall
+                font.pixelSize: Theme.panelTitleSize
                 font.family: Theme.fontMono
                 font.bold: true
             }
@@ -61,7 +61,7 @@ Item {
                     anchors.centerIn: parent
                     text: (Btc.changePct >= 0 ? "+" : "") + Btc.changePct.toFixed(2) + "%  24h"
                     color: Btc.changePct >= 0 ? Theme.positive : Theme.negative
-                    font.pixelSize: Theme.fontSizeBody
+                    font.pixelSize: Theme.panelCaptionSize
                     font.family: Theme.fontMono
                     font.bold: true
                 }
@@ -94,7 +94,7 @@ Item {
                 Text {
                     text: root.fmtUSD(Btc.currentUsd)
                     color: Theme.selFg
-                    font.pixelSize: Theme.fontSizeValueLarge
+                    font.pixelSize: Theme.panelReadoutSize
                     font.family: Theme.fontMono
                     font.bold: true
                 }
@@ -102,7 +102,7 @@ Item {
                 Text {
                     text: root.fmtAUD(Btc.currentAud)
                     color: Theme.fg
-                    font.pixelSize: Theme.fontSizeTitle
+                    font.pixelSize: Theme.panelBodySize
                     font.family: Theme.fontMono
                     opacity: Theme.opacitySecondary
                 }
@@ -121,13 +121,13 @@ Item {
 
                     Text {
                         text: "24H HIGH"
-                        color: Theme.fg; font.pixelSize: Theme.fontSizeCaption; font.family: Theme.fontMono; opacity: Theme.opacityMuted
+                        color: Theme.fg; font.pixelSize: Theme.panelCaptionSize; font.family: Theme.fontMono; opacity: Theme.opacitySecondary
                         Layout.alignment: Qt.AlignRight
                     }
                     Text {
                         text: root.fmtUSD(Btc.high24h)
                         color: Theme.positive
-                        font.pixelSize: Theme.fontSizeTitle; font.family: Theme.fontMono; font.bold: true
+                        font.pixelSize: Theme.panelBodySize; font.family: Theme.fontMono; font.bold: true
                         Layout.alignment: Qt.AlignRight
                     }
                 }
@@ -138,13 +138,13 @@ Item {
 
                     Text {
                         text: "24H LOW"
-                        color: Theme.fg; font.pixelSize: Theme.fontSizeCaption; font.family: Theme.fontMono; opacity: Theme.opacityMuted
+                        color: Theme.fg; font.pixelSize: Theme.panelCaptionSize; font.family: Theme.fontMono; opacity: Theme.opacitySecondary
                         Layout.alignment: Qt.AlignRight
                     }
                     Text {
                         text: root.fmtUSD(Btc.low24h)
                         color: Theme.negative
-                        font.pixelSize: Theme.fontSizeTitle; font.family: Theme.fontMono; font.bold: true
+                        font.pixelSize: Theme.panelBodySize; font.family: Theme.fontMono; font.bold: true
                         Layout.alignment: Qt.AlignRight
                     }
                 }
@@ -155,7 +155,7 @@ Item {
             visible: Btc.hasError && !Btc.loading && !Btc.hasCachedData
             text: "Failed to fetch data"
             color: Theme.negative
-            font.pixelSize: Theme.fontSizeBar
+            font.pixelSize: Theme.panelBodySize
             font.family: Theme.fontMono
             Layout.alignment: Qt.AlignHCenter
         }
@@ -237,12 +237,12 @@ Item {
             Text {
                 anchors { top: parent.top; right: parent.right; margins: 6 }
                 text: root.fmtUSD(Btc.high24h)
-                color: Theme.fg; font.pixelSize: Theme.fontSizeCaption; font.family: Theme.fontMono; opacity: Theme.opacityDisabled
+                color: Theme.fg; font.pixelSize: Theme.panelCaptionSize; font.family: Theme.fontMono; opacity: Theme.opacityDisabled
             }
             Text {
                 anchors { bottom: parent.bottom; right: parent.right; margins: 6 }
                 text: root.fmtUSD(Btc.low24h)
-                color: Theme.fg; font.pixelSize: Theme.fontSizeCaption; font.family: Theme.fontMono; opacity: Theme.opacityDisabled
+                color: Theme.fg; font.pixelSize: Theme.panelCaptionSize; font.family: Theme.fontMono; opacity: Theme.opacityDisabled
             }
         }
 
@@ -254,7 +254,7 @@ Item {
 
             Text {
                 text: Btc.lastUpdated ? "via CoinGecko · " + (Btc.stale ? "cached " : "updated ") + Btc.lastUpdated : "Price data unavailable"
-                color: Theme.fg; font.pixelSize: Theme.fontSizeCaption; font.family: Theme.fontMono; opacity: Theme.opacitySubtle
+                color: Theme.fg; font.pixelSize: Theme.panelCaptionSize; font.family: Theme.fontMono; opacity: Theme.opacitySecondary
             }
 
             Item { Layout.fillWidth: true }

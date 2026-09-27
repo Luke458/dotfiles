@@ -79,7 +79,7 @@ Item {
                     text: "CODEX USAGE"
                     color: Theme.selFg
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeHeadingLarge
+                    font.pixelSize: Theme.panelTitleSize
                     font.bold: true
                 }
 
@@ -98,7 +98,7 @@ Item {
                     color: Theme.fg
                     opacity: Theme.opacityStrong
                     font.family: Theme.fontMono
-                    font.pixelSize: Theme.fontSizeBody
+                    font.pixelSize: Theme.panelCaptionSize
                 }
             }
 
@@ -144,7 +144,7 @@ Item {
                             text: windowDelegate.modelData.label
                             color: Theme.selFg
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeLabel
+                            font.pixelSize: Theme.panelBodySize
                             font.bold: true
                         }
 
@@ -154,7 +154,7 @@ Item {
                             text: windowDelegate.modelData.remainingPercent + "% LEFT"
                             color: root.usageColor(windowDelegate.modelData.remainingPercent)
                             font.family: Theme.fontMono
-                            font.pixelSize: Theme.fontSizeLabel
+                            font.pixelSize: Theme.panelBodySize
                             font.bold: true
                         }
                     }
@@ -183,9 +183,9 @@ Item {
                     Text {
                         text: root.resetText(windowDelegate.modelData.resetsAtMs)
                         color: Theme.fg
-                        opacity: Theme.opacityStrong
+                        opacity: Theme.opacitySecondary
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeBody
+                        font.pixelSize: Theme.panelCaptionSize
                     }
                 }
             }
@@ -201,7 +201,7 @@ Item {
                 text: CodexUsageService.loading ? "Connecting to Codex…" : CodexUsageService.errorMessage
                 color: CodexUsageService.hasError ? Theme.negative : Theme.fg
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeLabel
+                font.pixelSize: Theme.panelBodySize
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
             }
@@ -211,9 +211,9 @@ Item {
                 text: "Run `codex login` if the account session has expired."
                 visible: CodexUsageService.hasError
                 color: Theme.fg
-                opacity: Theme.opacityStrong
+                opacity: Theme.opacitySecondary
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeBody
+                font.pixelSize: Theme.panelCaptionSize
                 horizontalAlignment: Text.AlignHCenter
             }
         }
@@ -232,7 +232,7 @@ Item {
                 text: "TOKEN ACTIVITY"
                 color: Theme.selFg
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeLabel
+                font.pixelSize: Theme.panelBodySize
                 font.bold: true
             }
 
@@ -251,7 +251,7 @@ Item {
                         text: root.compactNumber(CodexUsageService.lifetimeTokens)
                         color: Theme.selFg
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeDisplay
+                        font.pixelSize: Theme.panelValueSize
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -259,9 +259,9 @@ Item {
                         Layout.fillWidth: true
                         text: "LIFETIME"
                         color: Theme.fg
-                        opacity: Theme.opacityStrong
+                        opacity: Theme.opacitySecondary
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeCaption
+                        font.pixelSize: Theme.panelCaptionSize
                         horizontalAlignment: Text.AlignHCenter
                     }
                 }
@@ -275,7 +275,7 @@ Item {
                         text: root.compactNumber(CodexUsageService.peakDailyTokens)
                         color: Theme.selFg
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeDisplay
+                        font.pixelSize: Theme.panelValueSize
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -283,9 +283,9 @@ Item {
                         Layout.fillWidth: true
                         text: "PEAK DAY"
                         color: Theme.fg
-                        opacity: Theme.opacityStrong
+                        opacity: Theme.opacitySecondary
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeCaption
+                        font.pixelSize: Theme.panelCaptionSize
                         horizontalAlignment: Text.AlignHCenter
                     }
                 }
@@ -299,7 +299,7 @@ Item {
                         text: CodexUsageService.longestStreakDays >= 0 ? CodexUsageService.longestStreakDays + "d" : "—"
                         color: Theme.selFg
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeDisplay
+                        font.pixelSize: Theme.panelValueSize
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -307,9 +307,9 @@ Item {
                         Layout.fillWidth: true
                         text: "BEST STREAK"
                         color: Theme.fg
-                        opacity: Theme.opacityStrong
+                        opacity: Theme.opacitySecondary
                         font.family: Theme.fontMono
-                        font.pixelSize: Theme.fontSizeCaption
+                        font.pixelSize: Theme.panelCaptionSize
                         horizontalAlignment: Text.AlignHCenter
                     }
                 }
@@ -322,9 +322,9 @@ Item {
             Text {
                 text: "Read-only · credentials stay with Codex"
                 color: Theme.fg
-                opacity: Theme.opacitySubtle
+                opacity: Theme.opacitySecondary
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeCaption
+                font.pixelSize: Theme.panelCaptionSize
             }
 
             Item { Layout.fillWidth: true }
@@ -335,9 +335,9 @@ Item {
                         + Qt.formatTime(CodexUsageService.lastUpdated, "h:mm AP")
                     : "Waiting for update"
                 color: CodexUsageService.stale ? Theme.yellow : Theme.fg
-                opacity: Theme.opacitySubtle
+                opacity: Theme.opacitySecondary
                 font.family: Theme.fontMono
-                font.pixelSize: Theme.fontSizeCaption
+                font.pixelSize: Theme.panelCaptionSize
             }
         }
     }

@@ -6,6 +6,10 @@
 # --- Dynamic Environment Variables ---
 export GPG_TTY=$(tty)
 
+# Local vLLM endpoint auth (omp / any OpenAI-compatible client).
+# The server ignores the value; OMP requires a non-empty key for the vllm provider.
+export VLLM_API_KEY="vllm-local"
+
 # --- Basic Prompt with Git Support ---
 autoload -Uz vcs_info
 precmd() { vcs_info }

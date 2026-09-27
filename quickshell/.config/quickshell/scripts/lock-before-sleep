@@ -11,14 +11,17 @@ budget_ms=${LOCK_BUDGET_MS:-3500}
 deadline_ms=$(( $($date_bin +%s%3N) + budget_ms ))
 
 # The IPC reply only proves that the request landed. Wait until the compositor
-# confirms the ext-session-lock is secure before releasing logind's delay lock.
+# confirms the ext-session-lock is secure. Hypridle must use inhibit_sleep = 3:
+# the hook's exit status alone cannot prevent suspend or hold its delay lock.
 $timeout_bin 1 "$qs_bin" ipc call lock lock >/dev/null 2>&1 || true
 
 while (( $($date_bin +%s%3N) < deadline_ms )); do
-    status=$($timeout_bin 0.4 "$qs_bin" ipc call lock status 2>/dev/null || true)
-    case $status in
-        *'"secure":true'*) exit 0 ;;
-    esac
+    if status=$($timeout_bin 0.4 "$qs_bin" ipc call lock status 2>/dev/null); then
+        if /usr/bin/jq -e -s 'length == 1 and (.[0] | type == "object" and .secure == true)' \
+            >/dev/null 2>&1 <<< "$status"; then
+            exit 0
+        fi
+    fi
     $sleep_bin 0.1
 done
 

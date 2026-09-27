@@ -19,7 +19,6 @@ ShellRoot {
 
     property bool idleInhibited: false
     property bool leftSectionExpanded: true
-    readonly property int realScreenCount: Quickshell.screens.length
 
     IpcHandler {
         target: "shell"
@@ -211,7 +210,9 @@ ShellRoot {
 
     WlSessionLock {
         id: sessionLock
-        locked: Lock.requested && root.realScreenCount > 0
+        // Output removal must never unlock the session. WlSessionLock owns
+        // per-output surfaces and recreates them when screens return.
+        locked: Lock.requested
 
         // Quickshell can emit secureChanged during unlock before its lock
         // object is cleared, without a subsequent lockedChanged notification.

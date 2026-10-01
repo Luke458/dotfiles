@@ -3,6 +3,7 @@ instaloader
 libstrangle
 llama.cpp-git
 opencode-beta
+pcsx2-latest-bin
 qml-language-server-bin
 quickshell-local-git
 ripdrag-git

@@ -165,6 +165,7 @@ os-prober
 pacman-contrib
 paru
 pass
+patchelf
 pavucontrol
 perl
 perl-image-exiftool

@@ -14,7 +14,8 @@ singleton Btc Btc.qml
 singleton Polkit Polkit.qml
 singleton Pinentry Pinentry.qml
 singleton Timekeeping Timekeeping.qml
-singleton CodexUsageService CodexUsage.qml
+singleton AgentsUsage Agents.qml
+Agent Agent.qml
 singleton AttackSharkMetrics AttackSharkMetrics.qml
 singleton PodmanQuadlets PodmanQuadlets.qml
 singleton SingBox SingBox.qml

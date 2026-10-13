@@ -63,4 +63,9 @@ if [ ! -x "$shell_root/scripts/lock-before-sleep" ]; then
     exit 1
 fi
 
+require_text 'singleton AgentsUsage Agents.qml' services/qmldir
+require_text 'AgentsDetails AgentsDetails.qml' components/qmldir
+require_text 'id: agentsModule' windows/Bar.qml
+require_text 'omarchy-agent-usage-update' services/Agents.qml
+
 printf '%s\n' 'shell contract tests passed'

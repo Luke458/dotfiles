@@ -12,8 +12,8 @@ MullvadIndicator MullvadIndicator.qml
 MullvadDetails MullvadDetails.qml
 Disk Disk.qml
 BtcTicker BtcTicker.qml
-CodexUsage CodexUsage.qml
-CodexUsageDetails CodexUsageDetails.qml
+Agents Agents.qml
+AgentsDetails AgentsDetails.qml
 AttackSharkBattery AttackSharkBattery.qml
 AttackSharkDetails AttackSharkDetails.qml
 PodmanQuadletIndicator PodmanQuadlets.qml

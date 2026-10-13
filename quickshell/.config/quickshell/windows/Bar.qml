@@ -16,7 +16,7 @@ PanelWindow { // qmllint disable uncreatable-type
     property bool focused: screen && Hyprland.focusedMonitor && screen.name === Hyprland.focusedMonitor.name
     property bool isHidden: OverlayController.opened && OverlayController.targetScreenName === (screen ? screen.name : "")
     property list<Component> expandableModules: [trayModule, updatesModule, mediaModule, sunsetModule, idleModule, mullvadModule, tailscaleModule, singBoxModule, podmanModule, waydroidModule]
-    property list<Component> primaryModules: [attackSharkModule, codexModule, btcModule, weatherModule, volumeModule, cpuModule, gpuModule, memoryModule, diskModule, dateModule, clockModule, networkModule, notificationModule, powerModule]
+    property list<Component> primaryModules: [attackSharkModule, agentsModule, btcModule, weatherModule, volumeModule, cpuModule, gpuModule, memoryModule, diskModule, dateModule, clockModule, networkModule, notificationModule, powerModule]
 
     signal toggleInhibitor
     signal toggleLeftSection
@@ -243,11 +243,13 @@ PanelWindow { // qmllint disable uncreatable-type
     }
 
     Component {
-        id: codexModule
-        Components.CodexUsage {
+        id: agentsModule
+        Components.Agents {
             id: item
             forceHovered: window.popupAnchorHovered(item)
-            onClicked: window.toggleFlyout("CodexUsageDetails.qml", item)
+            onClicked: window.toggleFlyout("AgentsDetails.qml", item)
+            onCycleRequested: AgentsUsage.cycleProvider(1)
+            onLaunchRequested: AgentsUsage.launchCurrent()
         }
     }
 

@@ -53,6 +53,20 @@ That tool may replace the Stow symlink with a regular file, which makes the next
 `install.sh check` report a conflict. Re-run `./install.sh install scripts`
 after a Hermes update.
 
+## Agent usage
+
+The Quickshell bar's agent panel is ported from Omarchy's agents plugin. It
+detects Claude Code, Codex, and Fireworks and shows limits, prepaid balance, and
+token history per subscription. The four `omarchy-agent-usage-*` collectors under
+`scripts/.local/bin/` are vendored from Omarchy verbatim; the `update` script
+finds them next to itself and writes one JSON record per vendor to
+`~/.local/state/omarchy/agents/usage/`, which `services/Agents.qml` watches.
+
+Fireworks estimates a balance from `~/.config/omarchy/agents/fireworks.json`
+(`fundedAmount`, optional `fundedAt`) unless a live ledger is available. Claude
+limits need a signed-in `claude` CLI; Codex limits use the Codex app-server RPC.
+A vendor with no data does not appear in the bar.
+
 ## Quadlets
 
 The `containers` package tracks the five media-stack `.container` Quadlets and

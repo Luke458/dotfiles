@@ -56,16 +56,22 @@ after a Hermes update.
 ## Agent usage
 
 The Quickshell bar's agent panel is ported from Omarchy's agents plugin. It
-detects Claude Code, Codex, and Fireworks and shows limits, prepaid balance, and
-token history per subscription. The four `omarchy-agent-usage-*` collectors under
-`scripts/.local/bin/` are vendored from Omarchy verbatim; the `update` script
-finds them next to itself and writes one JSON record per vendor to
-`~/.local/state/omarchy/agents/usage/`, which `services/Agents.qml` watches.
+detects Claude Code, Codex, Grok, and Fireworks and shows limits, prepaid
+balance, free rate-limit resets (Codex), and token history per subscription. The
+five `omarchy-agent-usage-*` collectors under `scripts/.local/bin/` are vendored
+from Omarchy; the `update` script finds them next to itself and writes one JSON
+record per vendor to `~/.local/state/omarchy/agents/usage/`, which
+`services/Agents.qml` watches.
 
 Fireworks estimates a balance from `~/.config/omarchy/agents/fireworks.json`
 (`fundedAmount`, optional `fundedAt`) unless a live ledger is available. Claude
-limits need a signed-in `claude` CLI; Codex limits use the Codex app-server RPC.
-A vendor with no data does not appear in the bar.
+limits need a signed-in `claude` CLI; Codex limits use the Codex app-server RPC;
+Grok limits use the credits endpoint behind `grok usage`. A vendor with no data
+does not appear in the bar.
+
+Omarchy's multi-account management (`omarchy-agent-account-*`, per-account
+switching) is not vendored; the collectors still read an account registry if one
+exists, but this config manages a single account per vendor.
 
 ## Quadlets
 

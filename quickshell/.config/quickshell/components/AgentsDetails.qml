@@ -205,6 +205,16 @@ Item {
         return "Read-only · credentials stay with the CLIs";
     }
 
+    function resetCreditsText(credits) {
+        if (!credits || !(Number(credits.available) > 0)) return "";
+        const count = Number(credits.available);
+        let text = count + " free reset" + (count === 1 ? "" : "s");
+        const expires = new Date(String(credits.nextExpiresAt || "")).getTime();
+        if (isFinite(expires) && expires > root.nowMs)
+            text += " · next expires in " + root.formatDuration(expires - root.nowMs);
+        return text;
+    }
+
     function iconSource(p) {
         if (!p) return "";
         return Qt.resolvedUrl("../assets/agents/" + p.providerId + ".svg");
@@ -362,6 +372,17 @@ Item {
                     font.pixelSize: Theme.panelCaptionSize
                     wrapMode: Text.WordWrap
                 }
+            }
+
+            // ---------- Free resets (Codex) ----------
+            Text {
+                visible: text !== ""
+                width: parent.width
+                text: root.resetCreditsText(root.provider ? root.provider.resetCredits : null)
+                color: Theme.fg
+                opacity: Theme.opacitySecondary
+                font.family: Theme.fontMono
+                font.pixelSize: Theme.panelCaptionSize
             }
 
             // ---------- Balance ----------

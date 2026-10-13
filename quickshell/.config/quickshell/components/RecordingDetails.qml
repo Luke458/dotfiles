@@ -133,6 +133,48 @@ Item {
                     }
                 }
 
+                RowLayout {
+                    width: parent.width
+                    spacing: Theme.spacingSection
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Webcam overlay"
+                        color: Theme.fg
+                        font.family: Theme.fontMono
+                        font.pixelSize: Theme.panelBodySize
+                    }
+
+                    StyledSwitch {
+                        checked: RecordingService.webcamOverlay
+                        enabled: !RecordingService.screenActive
+                        Accessible.name: "Show the webcam in the recording"
+                        onToggled: RecordingService.webcamOverlay = !checked
+                    }
+                }
+
+                RowLayout {
+                    visible: RecordingService.webcamOverlay
+                    width: parent.width
+                    spacing: Theme.spacingSection
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Overlay size"
+                        color: Theme.fg
+                        font.family: Theme.fontMono
+                        font.pixelSize: Theme.panelBodySize
+                    }
+
+                    Dropdown {
+                        Layout.preferredWidth: 120
+                        model: ["small", "medium", "large"]
+                        currentIndex: Math.max(0, ["small", "medium", "large"].indexOf(RecordingService.webcamOverlaySize))
+                        enabled: !RecordingService.screenActive
+                        onActivated: index => RecordingService.webcamOverlaySize = model[index]
+                    }
+                }
+
                 Text {
                     width: parent.width
                     visible: RecordingService.screenOutputPath !== "" || RecordingService.screenActive

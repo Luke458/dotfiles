@@ -109,3 +109,31 @@ for _, class in ipairs(floating_tools) do
 		size = "70% 70%",
 	})
 end
+
+-- Webcam overlay for screen recording. Recording.qml launches mpv with
+-- --wayland-app-id WebcamOverlay-<size>; these keep it floating and pinned at
+-- an 8:9 portrait size scaled from the monitor height, in the bottom-right.
+local webcam_overlays = {
+	{ "small", "(monitor_h*4/25)", "(monitor_h*9/50)" },
+	{ "medium", "(monitor_h*2/9)", "(monitor_h/4)" },
+	{ "large", "(monitor_h*3/10)", "(monitor_h*27/80)" },
+}
+
+for _, overlay in ipairs(webcam_overlays) do
+	local name, width, height = overlay[1], overlay[2], overlay[3]
+	hl.window_rule({
+		name = "webcam-overlay-" .. name,
+		match = { class = "^WebcamOverlay-" .. name .. "$" },
+		size = { width, height },
+		move = { "(monitor_w-" .. width .. "-40)", "(monitor_h-" .. height .. "-40)" },
+	})
+end
+
+hl.window_rule({
+	name = "webcam-overlay",
+	match = { class = "^WebcamOverlay-(small|medium|large)$", title = "^WebcamOverlay$" },
+	float = true,
+	pin = true,
+	no_initial_focus = true,
+	no_dim = true,
+})

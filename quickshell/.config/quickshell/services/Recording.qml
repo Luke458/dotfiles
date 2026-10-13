@@ -5,10 +5,13 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 
-// Webcam and screen recording control. Screen capture uses gpu-screen-recorder
-// (stopped over its IPC socket via gsr-cli, which returns the saved path);
-// webcam capture runs ffmpeg headless and stops with SIGINT so the container is
-// finalized. Both survive a shell restart: state is rediscovered on load.
+// Webcam and screen recording control.
+//
+// Screen capture uses gpu-screen-recorder (stopped over its IPC socket via
+// gsr-cli, which returns the saved path). Webcam capture runs ffmpeg headless
+// and stops with SIGINT so the container is finalized. Screen capture can also
+// show the webcam in a floating mpv window (--wayland-app-id WebcamOverlay-*),
+// which the screen recorder then captures as part of the video.
 QtObject {
     id: root
 
@@ -32,9 +35,13 @@ QtObject {
     property string errorMessage: ""
     property bool desktopAudio: true
     property bool micAudio: false
+    property bool webcamOverlay: false
+    property string webcamOverlaySize: "medium"
 
     property bool screenStopping: false
     property bool webcamStopping: false
+    property string pendingMonitor: ""
+    property string pendingOutput: ""
 
     readonly property bool anyActive: screenActive || webcamActive
     // Only short-lived start/stop transitions count as busy. The recorder
@@ -42,7 +49,8 @@ QtObject {
     // would disable the Stop button (and the other recorder's Start) while a
     // recording was running.
     readonly property bool busy: screenStopProc.running || webcamStopProc.running
-        || webcamDeviceCheck.running
+        || webcamDeviceCheck.running || overlayDeviceCheck.running
+        || overlayWaitProc.running
 
     function timestamp() {
         const date = new Date();
@@ -67,23 +75,51 @@ QtObject {
     // ------------------------------------------------------------- screen
     function startScreen() {
         if (screenActive) return;
-        screenStopping = false;
         const monitor = Hyprland.focusedMonitor && Hyprland.focusedMonitor.name
             ? String(Hyprland.focusedMonitor.name) : "";
         if (monitor === "") {
             errorMessage = "No focused monitor to record";
             return;
         }
+        screenStopping = false;
         errorMessage = "";
-        const out = outputDir + "/screen-" + timestamp() + ".mp4";
-        screenOutputPath = out;
-        const args = ["-w", monitor, "-f", "60", "-c", "mp4", "-k", "h264", "-ipc", screenSocket, "-o", out];
+        pendingMonitor = monitor;
+        pendingOutput = outputDir + "/screen-" + timestamp() + ".mp4";
+        screenOutputPath = pendingOutput;
+
+        if (webcamOverlay) {
+            // Verify the camera, launch the mpv overlay, then start the
+            // recorder once the window is mapped so it is captured in place.
+            overlayDeviceCheck.command = ["test", "-e", webcamDevice];
+            overlayDeviceCheck.running = true;
+        } else {
+            startScreenRecorder();
+        }
+    }
+
+    function startScreenRecorder() {
+        const out = pendingOutput !== "" ? pendingOutput : outputDir + "/screen-" + timestamp() + ".mp4";
+        const args = ["-w", pendingMonitor, "-f", "60", "-c", "mp4", "-k", "h264", "-ipc", screenSocket, "-o", out];
         if (desktopAudio) args.push("-a", "default_output");
         if (micAudio) args.push("-a", "default_input");
         screenProc.command = ["sh", "-c", 'mkdir -p -- "$1" && shift && exec gpu-screen-recorder "$@"', "screen-rec", outputDir].concat(args);
         screenProc.running = true;
         screenActive = true;
         screenStartedAt = Date.now();
+    }
+
+    function launchOverlay() {
+        overlayProc.command = ["mpv", "av://v4l2:" + webcamDevice,
+            "--profile=low-latency", "--untimed", "--no-cache",
+            "--vf=lavfi=[crop=ih*8/9:ih]",
+            "--title=WebcamOverlay", "--wayland-app-id=WebcamOverlay-" + webcamOverlaySize,
+            "--no-border", "--no-audio", "--no-osc", "--osd-level=0", "--really-quiet"];
+        overlayProc.running = true;
+    }
+
+    function stopOverlay() {
+        overlayWaitProc.running = false;
+        if (overlayProc.running) overlayProc.running = false;
     }
 
     function stopScreen() {
@@ -152,6 +188,8 @@ QtObject {
             webcamPath: webcamOutputPath,
             lastSaved: lastSaved,
             busy: busy,
+            overlay: webcamOverlay,
+            overlaySize: webcamOverlaySize,
             error: errorMessage
         });
     }
@@ -164,6 +202,7 @@ QtObject {
             root.screenStopping = false;
             root.screenActive = false;
             root.screenStartedAt = 0;
+            root.stopOverlay();
             if (!expected && exitCode !== 0 && root.errorMessage === "")
                 root.errorMessage = "Screen recorder exited (" + exitCode + ")";
         }
@@ -181,6 +220,7 @@ QtObject {
         onExited: exitCode => {
             root.screenActive = false;
             root.screenStartedAt = 0;
+            root.stopOverlay();
             if (exitCode !== 0)
                 root.errorMessage = "Could not stop the screen recorder";
         }
@@ -190,11 +230,48 @@ QtObject {
         command: ["gsr-cli", "-ipc", root.screenSocket, "status"]
         running: false
         onExited: exitCode => {
-            if (exitCode === 0 && !root.screenActive) {
-                root.screenActive = true;
-                root.screenStartedAt = Date.now();
+            if (exitCode === 0) {
+                if (!root.screenActive) {
+                    root.screenActive = true;
+                    root.screenStartedAt = Date.now();
+                }
+            } else {
+                // No recording survived, so any overlay window is a leftover.
+                root.overlayCleanupProc.running = true;
             }
         }
+    }
+
+    property Process overlayDeviceCheck: Process {
+        command: []
+        running: false
+        onExited: exitCode => {
+            if (exitCode === 0) {
+                root.launchOverlay();
+                root.overlayWaitProc.running = true;
+            } else {
+                root.errorMessage = "Webcam overlay unavailable: " + root.webcamDevice;
+            }
+        }
+    }
+
+    property Process overlayProc: Process {
+        running: false
+    }
+
+    // Waits for the mpv window to map (up to ~3s) before the recorder starts,
+    // so the camera is captured already anchored in its corner.
+    property Process overlayWaitProc: Process {
+        command: ["sh", "-c",
+            'for i in $(seq 1 60); do hyprctl clients -j 2>/dev/null | grep -q "WebcamOverlay" && break; sleep 0.05; done; sleep 0.3',
+            "overlay-wait"]
+        running: false
+        onExited: root.startScreenRecorder()
+    }
+
+    property Process overlayCleanupProc: Process {
+        command: ["pkill", "-f", "WebcamOverlay"]
+        running: false
     }
 
     property Process webcamProc: Process {

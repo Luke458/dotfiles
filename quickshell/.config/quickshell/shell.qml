@@ -155,6 +155,12 @@ ShellRoot {
             return RecordingService.statusJson();
         }
 
+        function setOverlay(enabled: bool, size: string): string {
+            RecordingService.webcamOverlay = enabled;
+            if (size !== "") RecordingService.webcamOverlaySize = size;
+            return RecordingService.statusJson();
+        }
+
         function status(): string {
             return RecordingService.statusJson();
         }

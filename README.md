@@ -94,7 +94,10 @@ exists, but this config manages a single account per vendor.
   over its IPC socket with `gsr-cli`) and headless webcam capture (ffmpeg);
   files land in `~/Videos/Recordings`. Left click opens a flyout to start or
   stop either, choose desktop/microphone audio for screen capture, and see the
-  live timer and last saved path.
+  live timer and last saved path. Screen capture can also show a **webcam
+  overlay**: a floating mpv window (`WebcamOverlay-<small|medium|large>`) that
+  the window rules pin to the bottom-right, so the camera is baked into the
+  same video as the screen.
 
 ## Quadlets
 

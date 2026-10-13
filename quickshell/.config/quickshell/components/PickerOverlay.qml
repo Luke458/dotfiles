@@ -30,6 +30,7 @@ PanelWindow { // qmllint disable uncreatable-type
         if (mode === "power") return "Power:";
         if (mode === "menu") return "Select:";
         if (mode === "emoji") return "Emoji:";
+        if (mode === "clipboard") return "Clip:";
         return "Run:";
     }
     readonly property var terminalCommand: ["kitty", "-e"]
@@ -199,11 +200,80 @@ PanelWindow { // qmllint disable uncreatable-type
         updateFilter(searchField.text);
     }
 
+    function populateClipboard() {
+        const items = [];
+        const entries = Clipboard.history || [];
+        for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
+            if (!entry) continue;
+            if (entry.type === "image") {
+                items.push({
+                    name: entry.capturedAt ? "Image · " + entry.capturedAt : "Image",
+                    genericName: "image screenshot " + String(entry.mime || "") + " " + String(entry.capturedAt || ""),
+                    metadata: String(entry.mime || "image/png"),
+                    kind: "clipboard",
+                    clipType: "image",
+                    imagePath: String(entry.path || ""),
+                    clipIndex: i
+                });
+            } else {
+                const text = String(entry.text || "");
+                const preview = text.replace(/\s+/g, " ").slice(0, 160);
+                items.push({
+                    name: preview || "(empty)",
+                    genericName: text.slice(0, 8192),
+                    metadata: "text",
+                    kind: "clipboard",
+                    clipType: "text",
+                    clipIndex: i
+                });
+            }
+        }
+        allItems = items;
+        statusText = items.length > 0 ? "" : "Clipboard is empty";
+        updateFilter(searchField.text);
+    }
+
+    function removeClipboardAt(index) {
+        if (root.mode !== "clipboard" || index < 0 || index >= currentMatches.length) return;
+        const item = currentMatches[index];
+        if (item.clipIndex === undefined || item.clipIndex < 0) return;
+        Clipboard.removeAt(item.clipIndex);
+        populateClipboard();
+    }
+
+    function pasteClipboard(item) {
+        if (!item) return;
+        const entry = (Clipboard.history || [])[item.clipIndex];
+        if (!entry) return;
+        if (entry.type === "image") {
+            const script = pasteAvailable
+                ? 'wl-copy --type "$1" < "$2" && sleep 0.25 && ydotool key ctrl+v'
+                : 'wl-copy --type "$1" < "$2"';
+            Quickshell.execDetached(["sh", "-c", script, "clip-paste", String(entry.mime || "image/png"), String(entry.path || "")]);
+        } else {
+            const script = pasteAvailable
+                ? 'printf %s "$1" | wl-copy && sleep 0.25 && ydotool type "$1"'
+                : 'printf %s "$1" | wl-copy';
+            Quickshell.execDetached(["sh", "-c", script, "clip-paste", String(entry.text || "")]);
+        }
+        requestClose("clipboard-selected");
+        Osd.showMessage("copy", "Copied from clipboard");
+    }
+
     function updateFilter(text) {
         currentMatches = PickerModel.filter(allItems, text, 100);
         resultsModel.clear();
-        for (let i = 0; i < currentMatches.length; i++)
-            resultsModel.append({ name: currentMatches[i].name || "", glyph: currentMatches[i].glyph || "" });
+        for (let i = 0; i < currentMatches.length; i++) {
+            const match = currentMatches[i];
+            resultsModel.append({
+                name: match.name || "",
+                glyph: match.glyph || "",
+                clipType: match.clipType || "",
+                imagePath: match.imagePath || "",
+                clipIndex: match.clipIndex !== undefined ? match.clipIndex : -1
+            });
+        }
         resultsList.currentIndex = resultsModel.count > 0 ? 0 : -1;
     }
 
@@ -254,6 +324,8 @@ PanelWindow { // qmllint disable uncreatable-type
             });
         } else if (item.kind === "emoji") {
             copyEmoji(item.glyph || item.name);
+        } else if (item.kind === "clipboard") {
+            pasteClipboard(item);
         } else if (item.kind === "power") {
             requestClose("power-selected");
             if (item.name === "lock")
@@ -342,6 +414,8 @@ PanelWindow { // qmllint disable uncreatable-type
             populateMenu();
         } else if (mode === "emoji") {
             populateEmoji();
+        } else if (mode === "clipboard") {
+            populateClipboard();
         } else {
             populateApplications();
         }
@@ -383,9 +457,20 @@ PanelWindow { // qmllint disable uncreatable-type
             onTextChanged: root.updateFilter(text)
             onAccepted: root.selectItem(resultsList.currentIndex)
             Keys.onPressed: event => {
+                if (clearDialog.handleKey(event)) {
+                    event.accepted = true;
+                    return;
+                }
                 if (event.key === Qt.Key_Escape) {
                     event.accepted = true;
                     root.requestClose("escape");
+                } else if (event.key === Qt.Key_Delete && (event.modifiers & Qt.ControlModifier)) {
+                    event.accepted = true;
+                    if (root.mode === "clipboard" && Clipboard.history.length > 0)
+                        clearDialog.open("Clear clipboard history?", "This removes all " + Clipboard.history.length + " entries. This cannot be undone.");
+                } else if (event.key === Qt.Key_Delete) {
+                    event.accepted = true;
+                    root.removeClipboardAt(resultsList.currentIndex);
                 } else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down) {
                     event.accepted = true;
                     resultsList.currentIndex = Math.min(resultsList.count - 1, resultsList.currentIndex + 1);
@@ -425,9 +510,14 @@ PanelWindow { // qmllint disable uncreatable-type
                 required property int index
                 required property string name
                 required property string glyph
-                width: glyph !== ""
-                    ? Math.min(itemGlyph.implicitWidth + labelText.implicitWidth + Theme.space(24), Theme.space(340))
-                    : Math.min(itemText.implicitWidth + Theme.space(20), Theme.space(340))
+                required property string clipType
+                required property string imagePath
+                readonly property bool isImage: clipType === "image"
+                width: isImage
+                    ? Theme.space(300)
+                    : (glyph !== ""
+                        ? Math.min(itemGlyph.implicitWidth + labelText.implicitWidth + Theme.space(24), Theme.space(340))
+                        : Math.min(itemText.implicitWidth + Theme.space(20), Theme.space(340)))
                 height: root.implicitHeight
                 Rectangle {
                     anchors.fill: parent
@@ -436,12 +526,23 @@ PanelWindow { // qmllint disable uncreatable-type
                 RowLayout {
                     anchors.fill: parent
                     spacing: Theme.space(8)
-                    visible: resultItem.glyph !== ""
+                    visible: resultItem.glyph !== "" || resultItem.isImage
 
                     Item { Layout.preferredWidth: Theme.space(Theme.controlPadding) }
 
+                    Image {
+                        visible: resultItem.isImage
+                        source: resultItem.imagePath !== "" ? "file://" + resultItem.imagePath : ""
+                        sourceSize.width: 40
+                        sourceSize.height: 40
+                        Layout.preferredWidth: visible ? 40 : 0
+                        Layout.preferredHeight: 40
+                        fillMode: Image.PreserveAspectFit
+                    }
+
                     Text {
                         id: itemGlyph
+                        visible: !resultItem.isImage
                         text: resultItem.glyph
                         font.pixelSize: Theme.fontSizeHeadingLarge
                         Layout.alignment: Qt.AlignVCenter
@@ -462,7 +563,7 @@ PanelWindow { // qmllint disable uncreatable-type
                 }
                 Text {
                     id: itemText
-                    visible: resultItem.glyph === ""
+                    visible: resultItem.glyph === "" && !resultItem.isImage
                     anchors.fill: parent
                     leftPadding: Theme.space(Theme.controlPadding)
                     rightPadding: Theme.space(Theme.controlPadding)
@@ -477,6 +578,27 @@ PanelWindow { // qmllint disable uncreatable-type
                 HoverHandler { id: itemTap }
                 TapHandler { onTapped: root.selectItem(resultItem.index) }
             }
+        }
+    }
+
+    ConfirmDialog {
+        id: clearDialog
+        anchors.fill: parent
+        title: "Clear clipboard history?"
+        cancelText: "Cancel"
+        confirmText: "Clear"
+        onConfirmed: {
+            Clipboard.clear();
+            root.populateClipboard();
+        }
+        onCanceled: Qt.callLater(() => searchField.forceActiveFocus())
+    }
+
+    Connections {
+        target: Clipboard
+        function onRevisionChanged() {
+            if (root.mode === "clipboard")
+                root.populateClipboard();
         }
     }
 

@@ -6,6 +6,7 @@ local quickshell = os.getenv("HOME") .. "/.config/quickshell/scripts/qs"
 
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(programs.menu))
 hl.bind(mainMod .. " + SHIFT + D", hl.dsp.exec_cmd(quickshell .. " ipc call shell togglePicker pass '{}'"))
+hl.bind(mainMod .. " + SHIFT + V", hl.dsp.exec_cmd(quickshell .. " ipc call shell togglePicker clipboard '{}'"))
 hl.bind(mainMod .. " + BackSpace", hl.dsp.exec_cmd(quickshell .. " ipc call shell togglePicker power '{}'"))
 hl.bind(mainMod .. " + SHIFT + BackSpace", hl.dsp.exec_cmd(quickshell .. " ipc call lock lock"))
 hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/quickshell/scripts/restart-shell"))

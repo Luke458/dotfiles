@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import Quickshell.Wayland
 import "../components" as Components
 import "../services"
@@ -15,8 +16,64 @@ PanelWindow { // qmllint disable uncreatable-type
     property bool leftSectionExpanded: false
     property bool focused: screen && Hyprland.focusedMonitor && screen.name === Hyprland.focusedMonitor.name
     property bool isHidden: OverlayController.opened && OverlayController.targetScreenName === (screen ? screen.name : "")
-    property list<Component> expandableModules: [trayModule, updatesModule, mediaModule, sunsetModule, idleModule, mullvadModule, tailscaleModule, singBoxModule, podmanModule, waydroidModule]
-    property list<Component> primaryModules: [attackSharkModule, agentsModule, btcModule, weatherModule, volumeModule, cpuModule, gpuModule, memoryModule, diskModule, dateModule, clockModule, networkModule, notificationModule, powerModule]
+
+    // Widget order, section and visibility live in bar-widgets.json so adding,
+    // hiding or reordering a widget no longer means editing this file. A new
+    // widget still needs a Component below and an entry in componentForId().
+    property var barConfig: ({
+        primary: ["attackShark", "agents", "microphone", "btc", "weather", "volume", "cpu", "gpu", "memory", "disk", "date", "clock", "network", "notification", "power"],
+        expandable: ["tray", "updates", "media", "sunset", "idle", "mullvad", "tailscale", "singbox", "podman", "waydroid"],
+        hidden: []
+    })
+
+    property FileView barConfigFile: FileView {
+        path: Quickshell.shellPath("bar-widgets.json")
+        printErrors: false
+        onLoaded: {
+            try {
+                const parsed = JSON.parse(text());
+                if (parsed && typeof parsed === "object") {
+                    window.barConfig = {
+                        primary: Array.isArray(parsed.primary) ? parsed.primary.map(String) : window.barConfig.primary,
+                        expandable: Array.isArray(parsed.expandable) ? parsed.expandable.map(String) : window.barConfig.expandable,
+                        hidden: Array.isArray(parsed.hidden) ? parsed.hidden.map(String) : []
+                    };
+                }
+            } catch (error) {
+                console.warn("Bar: ignoring invalid bar-widgets.json: " + error);
+            }
+        }
+    }
+
+    function componentForId(id) {
+        const map = {
+            tray: trayModule, updates: updatesModule, media: mediaModule, sunset: sunsetModule,
+            idle: idleModule, mullvad: mullvadModule, tailscale: tailscaleModule, singbox: singBoxModule,
+            podman: podmanModule, waydroid: waydroidModule,
+            attackShark: attackSharkModule, agents: agentsModule, microphone: microphoneModule,
+            btc: btcModule, weather: weatherModule, volume: volumeModule,
+            cpu: cpuModule, gpu: gpuModule, memory: memoryModule, disk: diskModule,
+            date: dateModule, clock: clockModule, network: networkModule,
+            notification: notificationModule, power: powerModule
+        };
+        return map[id] || null;
+    }
+
+    function widgetsFor(section) {
+        const ids = section === "expandable" ? barConfig.expandable : barConfig.primary;
+        const hidden = barConfig.hidden || [];
+        const out = [];
+        for (let i = 0; i < ids.length; i++) {
+            const id = String(ids[i]);
+            if (hidden.indexOf(id) >= 0) continue;
+            const component = componentForId(id);
+            if (component) out.push(component);
+        }
+        return out;
+    }
+
+    property list<Component> expandableModules: widgetsFor("expandable")
+    property list<Component> primaryModules: widgetsFor("primary")
 
     signal toggleInhibitor
     signal toggleLeftSection
@@ -251,6 +308,11 @@ PanelWindow { // qmllint disable uncreatable-type
             onCycleRequested: AgentsUsage.cycleProvider(1)
             onLaunchRequested: AgentsUsage.launchCurrent()
         }
+    }
+
+    Component {
+        id: microphoneModule
+        Components.Microphone { }
     }
 
     Component {

@@ -18,7 +18,8 @@ QtObject {
         pass: true,
         power: true,
         menu: true,
-        emoji: true
+        emoji: true,
+        clipboard: true
     })
 
     function focusedScreenName() {

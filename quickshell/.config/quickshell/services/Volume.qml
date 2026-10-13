@@ -9,11 +9,17 @@ QtObject {
 
     // --- Core Properties ---
     property PwNode audioSink: Pipewire.defaultAudioSink
+    property PwNode audioSource: Pipewire.defaultAudioSource
     
     // Direct QML bindings for reliable reactivity
     readonly property real volume: (audioSink && audioSink.audio) ? audioSink.audio.volume : 0
     readonly property bool muted: (audioSink && audioSink.audio) ? audioSink.audio.muted : false
     readonly property int volumePercent: Math.round(volume * 100)
+
+    // Microphone (default source)
+    readonly property real micVolume: (audioSource && audioSource.audio) ? audioSource.audio.volume : 0
+    readonly property bool micMuted: (audioSource && audioSource.audio) ? audioSource.audio.muted : false
+    readonly property int micPercent: Math.round(micVolume * 100)
 
     // --- Filtered Lists ---
     readonly property var sinks: Pipewire.nodes.values.filter(node => 
@@ -76,6 +82,28 @@ QtObject {
 
     function changeVolume(delta) { 
         setVolume(root.volume + delta); 
+    }
+
+    // --- Microphone ---
+    function toggleMicMute() {
+        if (audioSource && audioSource.audio && audioSource.ready) {
+            audioSource.audio.muted = !audioSource.audio.muted;
+            Osd.showMessage(audioSource.audio.muted ? "mic-mute" : "mic",
+                audioSource.audio.muted ? "Microphone muted" : "Microphone live");
+        }
+    }
+
+    function setMicVolume(val) {
+        if (audioSource && audioSource.audio && audioSource.ready) {
+            const next = Math.max(0, Math.min(1, val));
+            audioSource.audio.muted = false;
+            audioSource.audio.volume = next;
+            Osd.showProgress("mic", Math.round(next * 100), 100);
+        }
+    }
+
+    function changeMicVolume(delta) {
+        setMicVolume(root.micVolume + delta);
     }
 
     // Controls ALL streams belonging to the same application
@@ -158,6 +186,6 @@ QtObject {
 
     // --- Subscriptions ---
     property PwObjectTracker _tracker: PwObjectTracker {
-        objects: [root.audioSink, Pipewire.nodes]
+        objects: [root.audioSink, root.audioSource, Pipewire.nodes]
     }
 }

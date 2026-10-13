@@ -73,6 +73,22 @@ Omarchy's multi-account management (`omarchy-agent-account-*`, per-account
 switching) is not vendored; the collectors still read an account registry if one
 exists, but this config manages a single account per vendor.
 
+## Bar and desktop
+
+- `quickshell/.config/quickshell/bar-widgets.json` controls the order, section
+  (`primary` vs collapsible `expandable`) and visibility of every bar widget.
+  Add a widget id to `hidden` to remove it without editing QML; a brand-new
+  widget still needs a `Component` and a `componentForId()` entry in `Bar.qml`.
+- Clipboard history: `scripts/.local/bin/clipboard-capture` is driven by
+  `wl-paste --watch`, stored under `~/.local/state/quickshell/`, and opened with
+  `SUPER+SHIFT+V`. Text and image entries are searchable; `Delete` removes one
+  and `Ctrl+Delete` clears all (with a confirmation dialog).
+- Display brightness uses DDC/CI (`ddcutil`) for the focused monitor and is
+  bound to `XF86MonBrightnessUp`/`XF86MonBrightnessDown` with the on-screen
+  display.
+- The microphone bar widget toggles the default source mute
+  (`XF86AudioMicMute`).
+
 ## Quadlets
 
 The `containers` package tracks the five media-stack `.container` Quadlets and

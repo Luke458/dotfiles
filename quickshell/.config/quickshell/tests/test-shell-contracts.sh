@@ -67,5 +67,13 @@ require_text 'singleton AgentsUsage Agents.qml' services/qmldir
 require_text 'AgentsDetails AgentsDetails.qml' components/qmldir
 require_text 'id: agentsModule' windows/Bar.qml
 require_text 'omarchy-agent-usage-update' services/Agents.qml
+require_text 'clipboard: true' services/OverlayController.qml
+require_text 'singleton Clipboard Clipboard.qml' services/qmldir
+require_text 'singleton Brightness Brightness.qml' services/qmldir
+require_text 'target: "brightness"' shell.qml
+require_text 'target: "volume"' shell.qml
+require_text 'componentForId' windows/Bar.qml
+require_text 'widgetsFor\("primary"\)' windows/Bar.qml
+require_text 'Microphone Microphone.qml' components/qmldir
 
 printf '%s\n' 'shell contract tests passed'

@@ -40,6 +40,12 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind(mainMod .. " + equal", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { repeating = true })
 hl.bind(mainMod .. " + minus", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { repeating = true })
 
+-- Display brightness (DDC/CI) and microphone mute
+local qs = os.getenv("HOME") .. "/.config/quickshell/scripts/qs"
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(qs .. " ipc call brightness raise"), { repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(qs .. " ipc call brightness lower"), { repeating = true })
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd(qs .. " ipc call volume toggleMic"))
+
 -- Screenshots
 hl.bind("Print", hl.dsp.exec_cmd("uwsm app -- hyprshot -m region"))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd("uwsm app -- hyprshot -m output"))

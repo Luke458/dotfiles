@@ -15,6 +15,7 @@ ShellRoot {
     Component.onCompleted: {
         Qt.application.name = "quickshell";
         Qt.application.organization = "quickshell";
+        Brightness.refresh();
     }
 
     property bool idleInhibited: false
@@ -128,6 +129,54 @@ ShellRoot {
 
         function state(): string {
             return Osd.statusJson();
+        }
+    }
+
+    IpcHandler {
+        target: "volume"
+
+        function toggleMic(): bool {
+            Volume.toggleMicMute();
+            return Volume.micMuted;
+        }
+
+        function micUp(): void {
+            Volume.changeMicVolume(0.05);
+        }
+
+        function micDown(): void {
+            Volume.changeMicVolume(-0.05);
+        }
+
+        function micStatus(): string {
+            return JSON.stringify({
+                available: Volume.audioSource !== null,
+                muted: Volume.micMuted,
+                percent: Volume.micPercent
+            });
+        }
+    }
+
+    IpcHandler {
+        target: "brightness"
+
+        function raise(): string {
+            Brightness.raise();
+            return Brightness.statusJson();
+        }
+
+        function lower(): string {
+            Brightness.lower();
+            return Brightness.statusJson();
+        }
+
+        function set(percent: int): string {
+            Brightness.setPercent(percent);
+            return Brightness.statusJson();
+        }
+
+        function status(): string {
+            return Brightness.statusJson();
         }
     }
 

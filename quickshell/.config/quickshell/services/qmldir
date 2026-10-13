@@ -16,6 +16,8 @@ singleton Pinentry Pinentry.qml
 singleton Timekeeping Timekeeping.qml
 singleton AgentsUsage Agents.qml
 Agent Agent.qml
+singleton Brightness Brightness.qml
+singleton Clipboard Clipboard.qml
 singleton AttackSharkMetrics AttackSharkMetrics.qml
 singleton PodmanQuadlets PodmanQuadlets.qml
 singleton SingBox SingBox.qml

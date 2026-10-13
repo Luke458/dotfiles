@@ -1,0 +1,32 @@
+{
+  "primary": [
+    "attackShark",
+    "agents",
+    "microphone",
+    "btc",
+    "weather",
+    "volume",
+    "cpu",
+    "gpu",
+    "memory",
+    "disk",
+    "date",
+    "clock",
+    "network",
+    "notification",
+    "power"
+  ],
+  "expandable": [
+    "tray",
+    "updates",
+    "media",
+    "sunset",
+    "idle",
+    "mullvad",
+    "tailscale",
+    "singbox",
+    "podman",
+    "waydroid"
+  ],
+  "hidden": []
+}

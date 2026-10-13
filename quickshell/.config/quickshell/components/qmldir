@@ -14,6 +14,10 @@ Disk Disk.qml
 BtcTicker BtcTicker.qml
 Agents Agents.qml
 AgentsDetails AgentsDetails.qml
+ConfirmDialog ConfirmDialog.qml
+PanelToolTip PanelToolTip.qml
+Dropdown Dropdown.qml
+Microphone Microphone.qml
 AttackSharkBattery AttackSharkBattery.qml
 AttackSharkDetails AttackSharkDetails.qml
 PodmanQuadletIndicator PodmanQuadlets.qml

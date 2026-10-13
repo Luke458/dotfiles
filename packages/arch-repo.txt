@@ -70,6 +70,7 @@ fsarchiver
 git
 git-lfs
 github-cli
+gitleaks
 glances
 glow
 go

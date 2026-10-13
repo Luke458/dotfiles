@@ -133,6 +133,34 @@ ShellRoot {
     }
 
     IpcHandler {
+        target: "recording"
+
+        function toggleScreen(): string {
+            RecordingService.toggleScreen();
+            return RecordingService.statusJson();
+        }
+
+        function stopScreen(): string {
+            RecordingService.stopScreen();
+            return RecordingService.statusJson();
+        }
+
+        function toggleWebcam(): string {
+            RecordingService.toggleWebcam();
+            return RecordingService.statusJson();
+        }
+
+        function stopWebcam(): string {
+            RecordingService.stopWebcam();
+            return RecordingService.statusJson();
+        }
+
+        function status(): string {
+            return RecordingService.statusJson();
+        }
+    }
+
+    IpcHandler {
         target: "volume"
 
         function toggleMic(): bool {

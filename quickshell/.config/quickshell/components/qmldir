@@ -19,6 +19,8 @@ PanelToolTip PanelToolTip.qml
 Dropdown Dropdown.qml
 Microphone Microphone.qml
 MicrophoneDetails MicrophoneDetails.qml
+Recording Recording.qml
+RecordingDetails RecordingDetails.qml
 AttackSharkBattery AttackSharkBattery.qml
 AttackSharkDetails AttackSharkDetails.qml
 PodmanQuadletIndicator PodmanQuadlets.qml

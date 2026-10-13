@@ -54,6 +54,7 @@ PanelWindow { // qmllint disable uncreatable-type
             btc: btcModule, weather: weatherModule, volume: volumeModule,
             cpu: cpuModule, gpu: gpuModule, memory: memoryModule, disk: diskModule,
             date: dateModule, clock: clockModule, network: networkModule,
+            recording: recordingModule,
             notification: notificationModule, power: powerModule
         };
         return map[id] || null;
@@ -316,6 +317,15 @@ PanelWindow { // qmllint disable uncreatable-type
             id: item
             forceHovered: window.popupAnchorHovered(item)
             onItemTriggered: window.toggleFlyout("MicrophoneDetails.qml", item)
+        }
+    }
+
+    Component {
+        id: recordingModule
+        Components.Recording {
+            id: item
+            forceHovered: window.popupAnchorHovered(item)
+            onItemTriggered: window.toggleFlyout("RecordingDetails.qml", item)
         }
     }
 

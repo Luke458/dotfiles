@@ -90,6 +90,11 @@ exists, but this config manages a single account per vendor.
   input flyout with a volume slider and input-device selection, right click
   toggles mute, and the wheel adjusts input volume (`XF86AudioMicMute` also
   toggles). Inputs the system reports as unavailable cannot become the default.
+- The recording widget controls screen capture (`gpu-screen-recorder`, stopped
+  over its IPC socket with `gsr-cli`) and headless webcam capture (ffmpeg);
+  files land in `~/Videos/Recordings`. Left click opens a flyout to start or
+  stop either, choose desktop/microphone audio for screen capture, and see the
+  live timer and last saved path.
 
 ## Quadlets
 

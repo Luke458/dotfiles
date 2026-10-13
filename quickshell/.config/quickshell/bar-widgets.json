@@ -13,6 +13,7 @@
     "date",
     "clock",
     "network",
+    "recording",
     "notification",
     "power"
   ],

@@ -78,5 +78,9 @@ require_text 'Microphone Microphone.qml' components/qmldir
 require_text 'MicrophoneDetails MicrophoneDetails.qml' components/qmldir
 require_text 'selectSource' services/Volume.qml
 require_text 'MicrophoneDetails\.qml' windows/Bar.qml
+require_text 'singleton RecordingService Recording.qml' services/qmldir
+require_text 'RecordingDetails RecordingDetails.qml' components/qmldir
+require_text 'target: "recording"' shell.qml
+require_text 'RecordingDetails\.qml' windows/Bar.qml
 
 printf '%s\n' 'shell contract tests passed'

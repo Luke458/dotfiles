@@ -86,8 +86,10 @@ exists, but this config manages a single account per vendor.
 - Display brightness uses DDC/CI (`ddcutil`) for the focused monitor and is
   bound to `XF86MonBrightnessUp`/`XF86MonBrightnessDown` with the on-screen
   display.
-- The microphone bar widget toggles the default source mute
-  (`XF86AudioMicMute`).
+- The microphone widget sits beside the volume widget: left click opens an
+  input flyout with a volume slider and input-device selection, right click
+  toggles mute, and the wheel adjusts input volume (`XF86AudioMicMute` also
+  toggles). Inputs the system reports as unavailable cannot become the default.
 
 ## Quadlets
 

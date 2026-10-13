@@ -312,7 +312,11 @@ PanelWindow { // qmllint disable uncreatable-type
 
     Component {
         id: microphoneModule
-        Components.Microphone { }
+        Components.Microphone {
+            id: item
+            forceHovered: window.popupAnchorHovered(item)
+            onItemTriggered: window.toggleFlyout("MicrophoneDetails.qml", item)
+        }
     }
 
     Component {

@@ -25,6 +25,11 @@ QtObject {
     readonly property var sinks: Pipewire.nodes.values.filter(node => 
         node.isSink && !node.isStream && node.audio && node.ready
     )
+
+    readonly property var sources: Pipewire.nodes.values.filter(node =>
+        !node.isSink && !node.isStream && node.audio
+            && !String(node.name || "").endsWith(".monitor")
+    )
     
     readonly property var apps: {
         const rawApps = Pipewire.nodes.values.filter((node) => {
@@ -136,6 +141,10 @@ QtObject {
 
     function selectSink(node) { 
         if (node && node.ready) Pipewire.preferredDefaultAudioSink = node; 
+    }
+
+    function selectSource(node) {
+        if (node) Pipewire.preferredDefaultAudioSource = node;
     }
 
     // --- Helper Functions ---

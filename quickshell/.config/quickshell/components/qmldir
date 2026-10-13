@@ -18,6 +18,7 @@ ConfirmDialog ConfirmDialog.qml
 PanelToolTip PanelToolTip.qml
 Dropdown Dropdown.qml
 Microphone Microphone.qml
+MicrophoneDetails MicrophoneDetails.qml
 AttackSharkBattery AttackSharkBattery.qml
 AttackSharkDetails AttackSharkDetails.qml
 PodmanQuadletIndicator PodmanQuadlets.qml

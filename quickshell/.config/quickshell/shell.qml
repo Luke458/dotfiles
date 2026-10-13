@@ -148,11 +148,27 @@ ShellRoot {
             Volume.changeMicVolume(-0.05);
         }
 
+        function selectMic(id: int): string {
+            for (const node of Volume.sources) {
+                if (node.id === id) {
+                    Volume.selectSource(node);
+                    break;
+                }
+            }
+            return Volume.audioSource ? String(Volume.audioSource.id) : "-1";
+        }
+
         function micStatus(): string {
             return JSON.stringify({
                 available: Volume.audioSource !== null,
                 muted: Volume.micMuted,
-                percent: Volume.micPercent
+                percent: Volume.micPercent,
+                sourceId: Volume.audioSource ? Volume.audioSource.id : -1,
+                sources: Volume.sources.map(node => ({
+                    id: node.id,
+                    name: Volume.getNodeName(node),
+                    active: Volume.audioSource !== null && Volume.audioSource.id === node.id
+                }))
             });
         }
     }

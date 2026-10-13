@@ -75,5 +75,8 @@ require_text 'target: "volume"' shell.qml
 require_text 'componentForId' windows/Bar.qml
 require_text 'widgetsFor\("primary"\)' windows/Bar.qml
 require_text 'Microphone Microphone.qml' components/qmldir
+require_text 'MicrophoneDetails MicrophoneDetails.qml' components/qmldir
+require_text 'selectSource' services/Volume.qml
+require_text 'MicrophoneDetails\.qml' windows/Bar.qml
 
 printf '%s\n' 'shell contract tests passed'

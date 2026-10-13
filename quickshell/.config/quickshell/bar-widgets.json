@@ -2,10 +2,10 @@
   "primary": [
     "attackShark",
     "agents",
-    "microphone",
     "btc",
     "weather",
     "volume",
+    "microphone",
     "cpu",
     "gpu",
     "memory",

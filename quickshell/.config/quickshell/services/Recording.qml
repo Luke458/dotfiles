@@ -33,9 +33,16 @@ QtObject {
     property bool desktopAudio: true
     property bool micAudio: false
 
+    property bool screenStopping: false
+    property bool webcamStopping: false
+
     readonly property bool anyActive: screenActive || webcamActive
-    readonly property bool busy: screenProc.running || webcamProc.running
-        || screenStopProc.running || webcamStopProc.running
+    // Only short-lived start/stop transitions count as busy. The recorder
+    // processes themselves run for the whole recording, so including them here
+    // would disable the Stop button (and the other recorder's Start) while a
+    // recording was running.
+    readonly property bool busy: screenStopProc.running || webcamStopProc.running
+        || webcamDeviceCheck.running
 
     function timestamp() {
         const date = new Date();
@@ -60,6 +67,7 @@ QtObject {
     // ------------------------------------------------------------- screen
     function startScreen() {
         if (screenActive) return;
+        screenStopping = false;
         const monitor = Hyprland.focusedMonitor && Hyprland.focusedMonitor.name
             ? String(Hyprland.focusedMonitor.name) : "";
         if (monitor === "") {
@@ -80,6 +88,7 @@ QtObject {
 
     function stopScreen() {
         if (!screenActive || screenStopProc.running) return;
+        screenStopping = true;
         screenStopProc.running = true;
     }
 
@@ -90,13 +99,14 @@ QtObject {
 
     // ------------------------------------------------------------- webcam
     function startWebcam() {
-        if (webcamActive) return;
+        if (webcamActive || webcamDeviceCheck.running) return;
         errorMessage = "";
         webcamDeviceCheck.command = ["test", "-e", webcamDevice];
         webcamDeviceCheck.running = true;
     }
 
     function launchWebcam() {
+        webcamStopping = false;
         const out = outputDir + "/webcam-" + timestamp() + ".mkv";
         webcamOutputPath = out;
         const args = [
@@ -116,6 +126,7 @@ QtObject {
 
     function stopWebcam() {
         if (!webcamActive || webcamStopProc.running) return;
+        webcamStopping = true;
         webcamStopProc.running = true;
     }
 
@@ -140,6 +151,7 @@ QtObject {
             screenPath: screenOutputPath,
             webcamPath: webcamOutputPath,
             lastSaved: lastSaved,
+            busy: busy,
             error: errorMessage
         });
     }
@@ -148,9 +160,11 @@ QtObject {
     property Process screenProc: Process {
         running: false
         onExited: exitCode => {
+            const expected = root.screenStopping;
+            root.screenStopping = false;
             root.screenActive = false;
             root.screenStartedAt = 0;
-            if (exitCode !== 0 && root.errorMessage === "")
+            if (!expected && exitCode !== 0 && root.errorMessage === "")
                 root.errorMessage = "Screen recorder exited (" + exitCode + ")";
         }
     }
@@ -186,9 +200,11 @@ QtObject {
     property Process webcamProc: Process {
         running: false
         onExited: exitCode => {
+            const expected = root.webcamStopping;
+            root.webcamStopping = false;
             root.webcamActive = false;
             root.webcamStartedAt = 0;
-            if (exitCode !== 0 && root.errorMessage === "")
+            if (!expected && exitCode !== 0 && root.errorMessage === "")
                 root.errorMessage = "Webcam recorder exited (" + exitCode + ")";
         }
     }

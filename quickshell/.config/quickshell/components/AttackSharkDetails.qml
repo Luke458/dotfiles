@@ -30,6 +30,8 @@ Item {
     }
 
     function batteryColor() {
+        if (AttackSharkMetrics.charging)
+            return Theme.positive;
         if (!AttackSharkMetrics.hasBattery)
             return Theme.fg;
         if (AttackSharkMetrics.battery <= 15)
@@ -41,6 +43,8 @@ Item {
 
     function ageText() {
         const updated = AttackSharkMetrics.lastUpdated.getTime();
+        if (AttackSharkMetrics.charging && !AttackSharkMetrics.hasBattery)
+            return "Battery percentage unavailable while charging";
         if (updated <= 0)
             return AttackSharkMetrics.loading ? "Waiting for helper…" : "No battery report received yet";
         const minutes = Math.max(0, Math.floor((Timekeeping.now.getTime() - updated) / 60000));
@@ -49,6 +53,8 @@ Item {
             age = Math.floor(minutes / 60) + "h " + (minutes % 60) + "m ago";
         else if (minutes >= 1)
             age = minutes + "m ago";
+        if (AttackSharkMetrics.charging || AttackSharkMetrics.wired)
+            return "Last known " + AttackSharkMetrics.battery + "% · " + age;
         return (AttackSharkMetrics.stale ? "Stale · last report " : "Reported ") + age;
     }
 
@@ -118,8 +124,9 @@ Item {
                 Item { Layout.fillWidth: true }
 
                 Text {
-                    text: (AttackSharkMetrics.charging ? "\u{f0e7} " : "")
-                        + (AttackSharkMetrics.hasBattery ? AttackSharkMetrics.battery + "%" : "--")
+                    text: AttackSharkMetrics.charging ? "Charging"
+                        : AttackSharkMetrics.wired ? "USB-C"
+                        : AttackSharkMetrics.hasBattery ? AttackSharkMetrics.battery + "%" : "--"
                     color: root.batteryColor()
                     font.family: Theme.fontMono
                     font.pixelSize: Theme.panelValueSize
@@ -129,6 +136,7 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
+                visible: AttackSharkMetrics.hasBattery && !AttackSharkMetrics.wired
                 implicitHeight: 9
                 color: Theme.border
                 radius: Theme.radiusMedium
@@ -264,6 +272,58 @@ Item {
             font.family: Theme.fontMono
             font.pixelSize: Theme.panelCaptionSize
             wrapMode: Text.Wrap
+        }
+
+        Divider { Layout.fillWidth: true }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingCompact
+
+            RowLayout {
+                Layout.fillWidth: true
+                SectionHeading { text: "FIRMWARE" }
+                Item { Layout.fillWidth: true }
+                StyledButton {
+                    text: AttackSharkMetrics.firmwareLoading ? "Reading…" : "Read version"
+                    Accessible.name: "Read mouse identity and firmware version without updating"
+                    enabled: AttackSharkMetrics.connected && !AttackSharkMetrics.firmwareLoading && !AttackSharkMetrics.dpiLoading
+                    onClicked: AttackSharkMetrics.refreshFirmware()
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: AttackSharkMetrics.firmwareInfo
+                    ? "PIAO · " + AttackSharkMetrics.firmwareInfo.usb_id + " · "
+                        + (AttackSharkMetrics.firmwareInfo.firmware_version || "Version unknown")
+                    : "Version not read"
+                color: Theme.fg
+                font.family: Theme.fontMono
+                font.pixelSize: Theme.panelBodySize
+                wrapMode: Text.Wrap
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: AttackSharkMetrics.firmwareError || (AttackSharkMetrics.firmwareInfo
+                    ? AttackSharkMetrics.firmwareInfo.firmware_message
+                    : "Read-only check · USB-C required for version")
+                color: AttackSharkMetrics.firmwareError ? Theme.negative : Theme.fg
+                opacity: Theme.opacitySecondary
+                font.family: Theme.fontMono
+                font.pixelSize: Theme.panelCaptionSize
+                wrapMode: Text.Wrap
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: "Updates unavailable: no verified compatible firmware or recovery procedure."
+                color: Theme.yellow
+                font.family: Theme.fontMono
+                font.pixelSize: Theme.panelCaptionSize
+                wrapMode: Text.Wrap
+            }
         }
     }
 }

@@ -44,6 +44,10 @@ Item {
 
         Text {
             text: {
+                if (AttackSharkMetrics.charging)
+                    return "Charging";
+                if (AttackSharkMetrics.wired)
+                    return "USB-C";
                 if (AttackSharkMetrics.loading && !AttackSharkMetrics.hasBattery)
                     return "...";
                 if (AttackSharkMetrics.hasBattery)

@@ -36,6 +36,12 @@ QtObject {
     property bool awaitingDpiStart: false
     property string lastDpiReport: ""
     property int detailsConsumers: 0
+    property var firmwareInfo: null
+    property bool firmwareLoading: false
+    property string firmwareError: ""
+    property bool awaitingFirmwareStart: false
+    property int deviceGeneration: 0
+    property int firmwareGeneration: -1
 
     readonly property bool hasDpi: dpiStages.length > 0 && dpiActiveStage >= 1
     readonly property int activeDpi: hasDpi && dpiActiveStage <= dpiStages.length ? dpiStages[dpiActiveStage - 1] : -1
@@ -96,6 +102,64 @@ QtObject {
         Qt.callLater(checkDpiStartFailure);
     }
 
+    function clearFirmware() {
+        deviceGeneration += 1;
+        firmwareInfo = null;
+        firmwareError = "";
+    }
+
+    function refreshFirmware() {
+        if (!connected || firmwareLoading || dpiLoading)
+            return;
+        firmwareInfo = null;
+        firmwareError = "";
+        firmwareLoading = true;
+        awaitingFirmwareStart = true;
+        firmwareGeneration = deviceGeneration;
+        firmwareProc.exec([Quickshell.shellPath("scripts/attack-shark-dpi"), "--json", "firmware"]);
+        Qt.callLater(checkFirmwareStartFailure);
+    }
+
+    function checkFirmwareStartFailure() {
+        if (firmwareProc.running || !awaitingFirmwareStart)
+            return;
+        awaitingFirmwareStart = false;
+        firmwareLoading = false;
+        if (firmwareGeneration === deviceGeneration)
+            firmwareError = "Could not start " + firmwareProc.command[0];
+    }
+
+    function applyFirmwarePayload(text) {
+        firmwareInfo = null;
+        try {
+            const payload = JSON.parse(String(text || "").trim());
+            if (payload.error) {
+                firmwareError = String(payload.error);
+                return;
+            }
+            const status = payload.firmware_status;
+            const version = payload.firmware_version;
+            if (payload.family !== "PIAO" || payload.device_uuid !== "090000000005"
+                    || payload.firmware_update_supported !== false
+                    || !["requires_usb", "detected", "unavailable"].includes(status)
+                    || typeof payload.firmware_message !== "string"
+                    || typeof payload.firmware_update_reason !== "string"
+                    || (status === "detected" ? typeof version !== "string" || !/^[0-9a-f]{4}$/.test(version)
+                        || version === "0000" || version === "ffff" : version !== null)
+                    || (payload.mode === "wireless" ? status !== "requires_usb" || payload.usb_id !== "372e:1014"
+                        : payload.mode !== "wired" || status === "requires_usb" || payload.usb_id !== "372e:1015"))
+                throw new Error("bad payload");
+            if (!connected || payload.device !== device || payload.mode !== mode) {
+                firmwareError = "Mouse connection changed; read firmware again";
+                return;
+            }
+            firmwareInfo = payload;
+            firmwareError = "";
+        } catch (error) {
+            firmwareError = "Invalid firmware response";
+        }
+    }
+
     // Passive stage-change notification from the metrics stream (DPI button
     // presses included), so the flyout stays current without re-querying.
     function applyDpiChange(stage, dpi) {
@@ -137,9 +201,12 @@ QtObject {
 
         try {
             const message = JSON.parse(line);
-            const linkChanged = root.device !== (message.device || "") || root.connected !== !!message.connected;
-            if (linkChanged)
+            const linkChanged = root.device !== (message.device || "") || root.connected !== !!message.connected
+                || root.mode !== (message.mode || "");
+            if (linkChanged) {
                 root.clearDpi();
+                root.clearFirmware();
+            }
             root.connected = !!message.connected;
             root.wired = !!message.wired;
             root.charging = !!message.charging;
@@ -149,7 +216,9 @@ QtObject {
             root.errorMessage = message.error || "";
             root.hasError = root.errorMessage.length > 0;
 
-            if (message.battery !== null && message.battery !== undefined) {
+            if (message.battery === null) {
+                root.battery = -1;
+            } else if (message.battery !== undefined) {
                 const value = Number(message.battery);
                 if (isFinite(value) && value >= 0 && value <= 100)
                     root.battery = Math.round(value);
@@ -165,6 +234,8 @@ QtObject {
             const updatedAt = Number(message.updated_at);
             if (isFinite(updatedAt) && updatedAt > 0)
                 root.lastUpdated = new Date(updatedAt * 1000);
+            else
+                root.lastUpdated = new Date(0);
 
             root.loading = false;
         } catch (error) {
@@ -249,6 +320,7 @@ QtObject {
             root.mode = "";
             root.stale = true;
             root.clearDpi();
+            root.clearFirmware();
             root.restartTimer.interval = root.restartBackoffMs;
             root.restartBackoffMs = Math.min(root.restartBackoffMs * 2, 60000);
             root.restartTimer.restart();
@@ -287,6 +359,31 @@ QtObject {
         repeat: true
         running: root.detailsConsumers > 0 && root.connected && !root.dpiLoading && root.dpiError.length > 0
         onTriggered: root.refreshDpi()
+    }
+
+    property Process firmwareProc: Process {
+        stdout: StdioCollector { id: firmwareStdout }
+        stderr: StdioCollector { id: firmwareStderr }
+
+        onStarted: root.awaitingFirmwareStart = false
+        onRunningChanged: {
+            if (!running)
+                Qt.callLater(root.checkFirmwareStartFailure);
+        }
+
+        onExited: exitCode => {
+            root.awaitingFirmwareStart = false;
+            root.firmwareLoading = false;
+            if (root.firmwareGeneration !== root.deviceGeneration || !root.connected)
+                return;
+            const output = firmwareStdout.text.trim();
+            if (exitCode !== 0)
+                root.firmwareError = firmwareStderr.text.trim() || "Firmware tool exited with code " + exitCode;
+            if (output)
+                root.applyFirmwarePayload(output);
+            else if (exitCode === 0)
+                root.firmwareError = "Empty firmware response";
+        }
     }
 
     property Timer restartTimer: Timer {

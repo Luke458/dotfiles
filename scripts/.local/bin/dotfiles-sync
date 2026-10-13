@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_dir=/home/luke/dotfiles
+script_path="$(readlink -f -- "${BASH_SOURCE[0]}")"
+repo_dir="$(cd -- "$(dirname -- "$script_path")/../../.." && pwd)"
 runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 lock_file="$runtime_dir/dotfiles-sync.lock"
 
@@ -12,6 +13,11 @@ if ! flock --nonblock 9; then
 fi
 
 cd "$repo_dir"
+
+if ! command -v rg >/dev/null 2>&1; then
+  printf '%s\n' 'ripgrep (rg) is required for the credential scan.' >&2
+  exit 1
+fi
 
 current_branch="$(git symbolic-ref --quiet --short HEAD)"
 if [[ "$current_branch" != main ]]; then

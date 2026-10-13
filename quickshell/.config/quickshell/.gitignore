@@ -1,2 +1,5 @@
 /plugins/pinentry/build/
 /theme.json
+# Host-specific symlinks into ~/Projects (see README)
+/scripts/attack-shark-dpi
+/scripts/attack-shark-metrics

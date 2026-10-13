@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""Update status for the Quickshell bar. Checks never install packages."""
+
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+
+HOME = Path.home()
+STATE = Path(os.environ.get("XDG_STATE_HOME", HOME / ".local/state")) / "quickshell" / "updates.json"
+CONFIG = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "arch-update" / "arch-update.conf"
+SOURCES = ("packages", "aur", "mise")
+CHECK_TIMEOUT = 45
+
+
+def run(args, timeout=CHECK_TIMEOUT, env=None):
+    return subprocess.run(args, capture_output=True, text=True, timeout=timeout,
+                          env={**os.environ, **(env or {}), "LC_ALL": "C"},
+                          stdin=subprocess.DEVNULL, check=False)
+
+
+def configured(option):
+    try:
+        return bool(re.search(r"^\s*" + re.escape(option) + r"\s*$", CONFIG.read_text(), re.M))
+    except FileNotFoundError:
+        return False
+
+
+def cached():
+    try:
+        data = json.loads(STATE.read_text())
+        if data.get("schema") != 1 or not isinstance(data.get("sources"), dict):
+            return empty()
+        defaults = empty()
+        data["sources"] = {key: data["sources"].get(key, defaults["sources"][key]) for key in SOURCES}
+        return data
+    except (OSError, ValueError, AttributeError):
+        return empty()
+
+
+def empty():
+    return {"schema": 1, "sources": {key: {"items": [], "checkedAt": 0, "error": "Not checked"}
+                                      for key in SOURCES}}
+
+
+def save(data):
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix="updates-", suffix=".json", dir=STATE.parent)
+    try:
+        with os.fdopen(fd, "w") as output:
+            json.dump(data, output, separators=(",", ":"))
+        os.replace(name, STATE)
+    finally:
+        if os.path.exists(name):
+            os.unlink(name)
+
+
+def details(names):
+    """Installed package metadata contains the upstream URL for repo and AUR items."""
+    if not names:
+        return {}
+    result = run(["pacman", "-Qi", *names], timeout=15)
+    urls = {}
+    name = ""
+    for line in result.stdout.splitlines():
+        if line.startswith("Name "):
+            name = line.partition(":")[2].strip()
+        elif line.startswith("URL ") and name:
+            urls[name] = line.partition(":")[2].strip()
+    return urls
+
+
+def package_items(output, source):
+    items = []
+    for line in output.splitlines():
+        match = re.match(r"^([^\s]+)\s+([^\s]+)\s+->\s+([^\s]+)$", line.strip())
+        if not line.strip() or line.rstrip().endswith("[ignored]"):
+            continue
+        if not match:
+            raise RuntimeError("Unrecognized update row: " + line[:160])
+        if match:
+            name, current, latest = match.groups()
+            items.append({"source": source, "name": name, "current": current,
+                          "latest": latest, "url": ""})
+    urls = details([item["name"] for item in items])
+    for item in items:
+        item["url"] = urls.get(item["name"], "")
+    return items
+
+
+def check_packages():
+    if not shutil.which("checkupdates"):
+        raise RuntimeError("checkupdates is unavailable")
+    with tempfile.TemporaryDirectory(prefix="qs-updates-") as db:
+        env = dict(os.environ, CHECKUPDATES_DB=db)
+        result = run(["checkupdates", "--nocolor"], env=env)
+    if result.returncode not in (0, 2):
+        raise RuntimeError(result.stderr.strip() or "Package check failed")
+    return package_items(result.stdout, "packages")
+
+
+def check_aur():
+    if configured("NoAUR"):
+        return []
+    helper = next((name for name in ("paru", "yay", "pikaur") if shutil.which(name)), None)
+    if not helper:
+        raise RuntimeError("No AUR helper is installed")
+    result = run([helper, "--color", "never", "-Qua"])
+    # paru, yay and pikaur exit 1 when there is nothing to upgrade and 0 when
+    # they listed packages, so 1 is a successful empty result, not a failure.
+    if result.returncode not in (0, 1):
+        raise RuntimeError(result.stderr.strip() or "AUR check failed")
+    return package_items(result.stdout, "aur")
+
+
+def check_mise():
+    if not shutil.which("mise"):
+        raise RuntimeError("mise is unavailable")
+    result = run(["mise", "--cd", str(HOME), "outdated", "--json"])
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or "mise check failed")
+    payload = json.loads(result.stdout)
+    if not isinstance(payload, dict):
+        raise RuntimeError("Unexpected mise response")
+    items = []
+    for name, entry in payload.items():
+        if not isinstance(entry, dict):
+            continue
+        # Explicit github backend names have a trustworthy source URL.
+        url = "https://github.com/" + name[7:] if name.startswith("github:") and re.fullmatch(r"[\w.-]+/[\w.-]+", name[7:]) else ""
+        items.append({"source": "mise", "name": name, "current": str(entry.get("current") or ""),
+                      "latest": str(entry.get("latest") or ""), "requested": str(entry.get("requested") or ""),
+                      "url": url})
+    return items
+
+
+def check():
+    data = cached()
+    for key, fn in (("packages", check_packages), ("aur", check_aur),
+                    ("mise", check_mise)):
+        try:
+            items = fn()
+            data["sources"][key] = {"items": items, "checkedAt": int(time.time()), "error": ""}
+        except (OSError, subprocess.TimeoutExpired, RuntimeError, ValueError) as error:
+            previous = data["sources"].get(key, {"items": [], "checkedAt": 0})
+            previous["error"] = str(error).splitlines()[0][:240]
+            data["sources"][key] = previous
+    save(data)
+    return data
+
+
+def launch(source):
+    if not shutil.which("kitty"):
+        raise RuntimeError("kitty terminal is unavailable")
+    if source == "cachy":
+        command = ["cachy-update"]
+    elif source == "pacman":
+        if not shutil.which("pacman"):
+            raise RuntimeError("pacman is unavailable")
+        command = ["sudo", "pacman", "-Syu"]
+    elif source == "mise":
+        command = ["mise", "--cd", str(HOME), "upgrade"]
+    elif source == "all":
+        command = [sys.executable, str(Path(__file__).resolve()), "run-all"]
+    else:
+        raise RuntimeError("Unknown update action")
+    if not shutil.which(command[0]):
+        raise RuntimeError(command[0] + " is unavailable")
+    subprocess.Popen(["kitty", "--title", "System updates", "--hold", *command],
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+    return {"launched": source}
+
+
+def run_all():
+    code = subprocess.call(["cachy-update"])
+    if code not in (0, 7):
+        print("Cachy Update failed or was cancelled; mise was not started.")
+        return code
+    return subprocess.call(["mise", "--cd", str(HOME), "upgrade"])
+
+
+def main():
+    action = sys.argv[1] if len(sys.argv) > 1 else "status"
+    try:
+        if action == "status":
+            result = cached()
+        elif action == "check":
+            result = check()
+        elif action == "launch" and len(sys.argv) == 3:
+            result = launch(sys.argv[2])
+        elif action == "run-all":
+            return run_all()
+        else:
+            raise RuntimeError("Usage: update-monitor status|check|launch pacman|cachy|mise|all")
+        print(json.dumps(result, separators=(",", ":")))
+        return 0
+    except (OSError, RuntimeError) as error:
+        print(json.dumps({"error": str(error)}))
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

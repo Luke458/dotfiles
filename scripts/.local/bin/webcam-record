@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+video_device="${WEBCAM_DEVICE:-/dev/v4l/by-id/usb-UGREEN_UGREEN_AI_Camera_CM930_4K_2025102215-video-index0}"
+audio_source="${WEBCAM_AUDIO_SOURCE:-alsa_input.usb-UGREEN_UGREEN_AI_Camera_CM930_4K_2025102215-02.mono-fallback}"
+output_dir="${WEBCAM_OUTPUT_DIR:-$HOME/Videos/Webcam}"
+
+for command_name in ffmpeg mpv; do
+    if ! command -v "$command_name" >/dev/null 2>&1; then
+        printf 'Missing required command: %s\n' "$command_name" >&2
+        exit 1
+    fi
+done
+
+if [[ ! -e "$video_device" ]]; then
+    printf 'Webcam video device is unavailable: %s\n' "$video_device" >&2
+    if [[ ! -d "/usr/lib/modules/$(uname -r)" ]]; then
+        printf 'The running kernel has no matching module directory. Reboot into the installed kernel and try again.\n' >&2
+    fi
+    exit 1
+fi
+
+if command -v fuser >/dev/null 2>&1 && fuser "$video_device" >/dev/null 2>&1; then
+    printf 'Webcam is already in use (a recording may already be running).\n' >&2
+    exit 1
+fi
+
+mkdir -p -- "$output_dir"
+timestamp="$(date +%Y-%m-%d_%H-%M-%S)"
+recording="$output_dir/webcam-$timestamp.mkv"
+log_file="$output_dir/webcam-$timestamp.log"
+runtime_dir="$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/webcam-record.XXXXXX")"
+preview_fifo="$runtime_dir/preview.mkv"
+mkfifo -- "$preview_fifo"
+
+ffmpeg_pid=""
+cleanup() {
+    if [[ -n "$ffmpeg_pid" ]] && kill -0 "$ffmpeg_pid" 2>/dev/null; then
+        kill -INT "$ffmpeg_pid" 2>/dev/null || true
+        wait "$ffmpeg_pid" 2>/dev/null || true
+    fi
+    rm -f -- "$preview_fifo"
+    rmdir -- "$runtime_dir" 2>/dev/null || true
+}
+trap cleanup EXIT HUP INT TERM
+
+printf 'Recording: %s\n' "$recording"
+printf 'Close mpv or press q to stop and finalize the recording.\n'
+
+ffmpeg -nostdin -hide_banner -loglevel warning \
+    -thread_queue_size 1024 \
+    -f v4l2 -input_format mjpeg -video_size 1920x1080 -framerate 30 \
+    -i "$video_device" \
+    -thread_queue_size 1024 -f pulse -i "$audio_source" \
+    -map 0:v:0 -c:v copy -an -f matroska -y "$preview_fifo" \
+    -map 0:v:0 -map 1:a:0 -c:v copy -c:a flac "$recording" \
+    2>>"$log_file" &
+ffmpeg_pid=$!
+
+mpv --title='UGREEN Webcam — recording (close to stop)' \
+    --profile=low-latency --no-cache --untimed --audio=no --vf=hflip \
+    --demuxer-lavf-format=matroska "$preview_fifo" \
+    2>>"$log_file" || true
+
+if kill -0 "$ffmpeg_pid" 2>/dev/null; then
+    kill -INT "$ffmpeg_pid" 2>/dev/null || true
+fi
+wait "$ffmpeg_pid" 2>/dev/null || true
+ffmpeg_pid=""
+
+if [[ -s "$recording" ]]; then
+    printf 'Saved: %s\n' "$recording"
+else
+    printf 'Recording failed; see %s\n' "$log_file" >&2
+    exit 1
+fi

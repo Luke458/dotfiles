@@ -1,6 +1,6 @@
 -- Autostart
 
-local quickshell = "/home/luke/.config/quickshell/scripts/launch-shell"
+local quickshell = os.getenv("HOME") .. "/.config/quickshell/scripts/launch-shell"
 
 local commands = {
 	"uwsm app -- easyeffects --hide-window --service-mode",

@@ -33,6 +33,8 @@ QtObject {
     property bool dpiLoading: false
     property string dpiError: ""
     property bool dpiRefreshQueued: false
+    property bool awaitingDpiStart: false
+    property string lastDpiReport: ""
     property int detailsConsumers: 0
 
     readonly property bool hasDpi: dpiStages.length > 0 && dpiActiveStage >= 1
@@ -58,14 +60,40 @@ QtObject {
     }
 
     function selectDpiStage(stage) {
-        if (dpiProc.running || stage === dpiActiveStage)
+        if (!connected || dpiLoading || stage === dpiActiveStage || !(stage >= 1 && stage <= 8))
             return;
         runDpi(["select", String(stage), "--apply"]);
     }
 
+    function setDpi(stage, dpi) {
+        if (!connected || dpiLoading || !Number.isInteger(stage) || stage < 1 || stage > 8
+                || !Number.isInteger(dpi) || dpi < 50 || dpi > 30000 || dpi % 50 !== 0)
+            return;
+        runDpi(["set", String(dpi), "--stage", String(stage), "--apply"]);
+    }
+
+    function clearDpi() {
+        dpiStages = [];
+        dpiActiveStage = -1;
+        dpiMode = "";
+        lastDpiReport = "";
+    }
+
+    function checkDpiStartFailure() {
+        if (dpiProc.running || !awaitingDpiStart)
+            return;
+        awaitingDpiStart = false;
+        dpiLoading = false;
+        dpiError = "Could not start " + dpiProc.command[0];
+    }
+
     function runDpi(args) {
+        if (dpiLoading)
+            return;
         dpiLoading = true;
+        awaitingDpiStart = true;
         dpiProc.exec([Quickshell.shellPath("scripts/attack-shark-dpi"), "--json"].concat(args));
+        Qt.callLater(checkDpiStartFailure);
     }
 
     // Passive stage-change notification from the metrics stream (DPI button
@@ -90,7 +118,8 @@ QtObject {
             }
             const stages = Array.isArray(payload.stages) ? payload.stages.map(Number) : [];
             const active = Number(payload.active_stage);
-            if (stages.length === 0 || !stages.every(isFinite) || !(active >= 1 && active <= stages.length))
+            if (stages.length !== 8 || !stages.every(value => Number.isInteger(value) && value >= 50 && value <= 30000 && value % 50 === 0)
+                    || !Number.isInteger(active) || !(active >= 1 && active <= stages.length))
                 throw new Error("bad payload");
             dpiStages = stages;
             dpiActiveStage = active;
@@ -108,6 +137,9 @@ QtObject {
 
         try {
             const message = JSON.parse(line);
+            const linkChanged = root.device !== (message.device || "") || root.connected !== !!message.connected;
+            if (linkChanged)
+                root.clearDpi();
             root.connected = !!message.connected;
             root.wired = !!message.wired;
             root.charging = !!message.charging;
@@ -123,8 +155,12 @@ QtObject {
                     root.battery = Math.round(value);
             }
 
-            if (message.dpi_stage !== null && message.dpi_stage !== undefined)
+            const dpiReport = message.dpi_stage == null ? "" : String(message.dpi_stage) + ":" + String(message.dpi);
+            if (root.connected && dpiReport && dpiReport !== root.lastDpiReport)
                 root.applyDpiChange(Number(message.dpi_stage), Number(message.dpi));
+            root.lastDpiReport = dpiReport;
+            if (linkChanged && root.connected && root.detailsConsumers > 0)
+                root.refreshDpi();
 
             const updatedAt = Number(message.updated_at);
             if (isFinite(updatedAt) && updatedAt > 0)
@@ -211,7 +247,8 @@ QtObject {
             root.wired = false;
             root.charging = false;
             root.mode = "";
-            root.stale = root.hasBattery;
+            root.stale = true;
+            root.clearDpi();
             root.restartTimer.interval = root.restartBackoffMs;
             root.restartBackoffMs = Math.min(root.restartBackoffMs * 2, 60000);
             root.restartTimer.restart();
@@ -222,18 +259,34 @@ QtObject {
         stdout: StdioCollector { id: dpiStdout }
         stderr: StdioCollector { id: dpiStderr }
 
+        onStarted: root.awaitingDpiStart = false
+        onRunningChanged: {
+            if (!running)
+                Qt.callLater(root.checkDpiStartFailure);
+        }
+
         onExited: exitCode => { // qmllint disable signal-handler-parameters
+            root.awaitingDpiStart = false;
             root.dpiLoading = false;
             const output = dpiStdout.text.trim();
             if (output)
                 root.applyDpiPayload(output);
             else
                 root.dpiError = dpiStderr.text.trim() || "DPI tool exited with code " + exitCode;
-            if (root.dpiRefreshQueued) {
-                root.dpiRefreshQueued = false;
+            if (!root.connected)
+                root.clearDpi();
+            const refresh = root.dpiRefreshQueued && root.detailsConsumers > 0 && root.connected;
+            root.dpiRefreshQueued = false;
+            if (refresh)
                 Qt.callLater(() => root.refreshDpi());
-            }
         }
+    }
+
+    property Timer dpiRetryTimer: Timer {
+        interval: 10000
+        repeat: true
+        running: root.detailsConsumers > 0 && root.connected && !root.dpiLoading && root.dpiError.length > 0
+        onTriggered: root.refreshDpi()
     }
 
     property Timer restartTimer: Timer {

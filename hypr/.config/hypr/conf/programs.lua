@@ -1,6 +1,6 @@
 -- Programs
 
-local quickshell = "/home/luke/.config/quickshell/scripts/qs"
+local quickshell = os.getenv("HOME") .. "/.config/quickshell/scripts/qs"
 
 return {
 	terminal = "uwsm app -- kitty",

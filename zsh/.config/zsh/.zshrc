@@ -1,3 +1,14 @@
+# --- XDG Base Directory defaults ---
+# uwsm sets these for the graphical session; provide fallbacks for TTY and
+# non-uwsm shells so paths such as HISTFILE never resolve to "/zsh/history".
+: "${XDG_CONFIG_HOME:=$HOME/.config}"
+: "${XDG_DATA_HOME:=$HOME/.local/share}"
+: "${XDG_STATE_HOME:=$HOME/.local/state}"
+: "${XDG_CACHE_HOME:=$HOME/.cache}"
+: "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
+: "${ZDOTDIR:=$XDG_CONFIG_HOME/zsh}"
+export XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME XDG_RUNTIME_DIR ZDOTDIR
+
 # --- Zsh Plugins (sourced from system) ---
 [ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ] && source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 [ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
@@ -43,6 +54,7 @@ setopt PROMPT_SUBST
 PROMPT='${GRUVBOX_CYAN}%n${GRUVBOX_GREEN2}@${GRUVBOX_MAGENTA}%m${GRUVBOX_RESET} ${GRUVBOX_BLUE}%~${GRUVBOX_RESET} ${vcs_info_msg_0_}${GRUVBOX_YELLOW}➜${GRUVBOX_RESET} '
 
 # --- History Config ---
+mkdir -p -- "$XDG_STATE_HOME/zsh"
 HISTFILE="$XDG_STATE_HOME"/zsh/history
 HISTSIZE=10000
 SAVEHIST=10000
@@ -125,12 +137,12 @@ alias gst='git status'
 alias gd='git diff'
 alias pacman='sudo pacman'
 alias reload='source $ZDOTDIR/.zshrc'
-alias bc="bc -ql" \
-alias rsync="rsync -vrPlu" \
-alias mkd="mkdir -pv" \
-alias yt="yt-dlp --embed-metadata -i" \
-alias yta="yt -x -f bestaudio/best" \
-alias ytt="yt --skip-download --write-thumbnail" \
+alias bc="bc -ql"
+alias rsync="rsync -vrPlu"
+alias mkd="mkdir -pv"
+alias yt="yt-dlp --embed-metadata -i"
+alias yta="yt -x -f bestaudio/best"
+alias ytt="yt --skip-download --write-thumbnail"
 alias ffmpeg="ffmpeg -hide_banner"
 
 # --- Keybindings ---

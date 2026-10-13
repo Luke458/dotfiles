@@ -4,6 +4,11 @@ set -euo pipefail
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 target_dir="${STOW_TARGET:-$HOME}"
 
+if ! command -v stow >/dev/null 2>&1; then
+  printf 'GNU Stow is required but was not found on PATH.\n' >&2
+  exit 1
+fi
+
 all_packages=(
   btop cava containers desktop easyeffects fastfetch git glow helium hypr imv
   kitty mpv nvim pacman paru pinentry quickshell scripts systemd theme

@@ -2,13 +2,13 @@
 
 local programs = require("conf.programs")
 local mainMod = "SUPER"
-local quickshell = "/home/luke/.config/quickshell/scripts/qs"
+local quickshell = os.getenv("HOME") .. "/.config/quickshell/scripts/qs"
 
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(programs.menu))
 hl.bind(mainMod .. " + SHIFT + D", hl.dsp.exec_cmd(quickshell .. " ipc call shell togglePicker pass '{}'"))
 hl.bind(mainMod .. " + BackSpace", hl.dsp.exec_cmd(quickshell .. " ipc call shell togglePicker power '{}'"))
 hl.bind(mainMod .. " + SHIFT + BackSpace", hl.dsp.exec_cmd(quickshell .. " ipc call lock lock"))
-hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("/home/luke/.config/quickshell/scripts/restart-shell"))
+hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/quickshell/scripts/restart-shell"))
 
 hl.layer_rule({
     name = "qs-picker-private",

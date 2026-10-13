@@ -22,6 +22,7 @@ case "${ext}" in
     ms)
 	    _PRFX="---COMPILE:"
 	    _ARGS="$(grep -oP -- "$_PRFX.*$" "${file}" | sed -s "s|$_PRFX||")"
+	    # shellcheck disable=SC2086  # _ARGS is intentionally split into groff arguments
 	    preconv "${file}" | groff -t -k -ms ${_ARGS} -dpaper=a4 -P-pa4 -Tpdf > "${base}.pdf"
 	    ;;
     c) cc "${file}" -o "${base}" && "./${base}" ;;
@@ -31,11 +32,13 @@ case "${ext}" in
     h) sudo make install ;;
     java) javac -d classes "${file}" && java -cp classes "${base}" ;;
     m) octave "${file}" ;;
-    md) [ -x "$(command -v lowdown)" ] && \
-	    lowdown --parse-no-intraemph "${file}" -Tms | groff -mpdfmark -ms -kept -T pdf > "${base}.pdf" || \
-	    [ -x "$(command -v groffdown)" ] && \
-	    groffdown -i "${file}" | groff -T pdf > "${base}.pdf" || \
-	    pandoc -t ms --highlight-style="kate" -s -o "${base}.pdf" "${file}" ;;
+    md) if [ -x "$(command -v lowdown)" ]; then
+	    lowdown --parse-no-intraemph "${file}" -Tms | groff -mpdfmark -ms -kept -T pdf > "${base}.pdf"
+	elif [ -x "$(command -v groffdown)" ]; then
+	    groffdown -i "${file}" | groff -T pdf > "${base}.pdf"
+	else
+	    pandoc -t ms --highlight-style="kate" -s -o "${base}.pdf" "${file}"
+	fi ;;
     org) emacs "${file}" --batch -u "${USER}" -f org-latex-export-to-pdf ;;
     py) python "${file}" ;;
     [rR]md) Rscript -e "rmarkdown::render('${file}', quiet=TRUE)" ;;

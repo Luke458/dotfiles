@@ -1,6 +1,8 @@
 [Unit]
 Description=Commit and push tracked dotfile changes
 ConditionPathIsDirectory=%h/dotfiles/.git
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
@@ -10,3 +12,5 @@ ExecStart=%h/.local/bin/dotfiles-sync
 Nice=10
 IOSchedulingClass=idle
 TimeoutStartSec=5min
+NoNewPrivileges=yes
+PrivateTmp=yes

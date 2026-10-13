@@ -14,8 +14,8 @@ fi
 
 cd "$repo_dir"
 
-if ! command -v rg >/dev/null 2>&1; then
-  printf '%s\n' 'ripgrep (rg) is required for the credential scan.' >&2
+if ! command -v gitleaks >/dev/null 2>&1 && ! command -v rg >/dev/null 2>&1; then
+  printf '%s\n' 'gitleaks or ripgrep (rg) is required for the credential scan.' >&2
   exit 1
 fi
 
@@ -52,7 +52,14 @@ if ! git diff --check; then
   exit 1
 fi
 
-if rg --hidden --files-with-matches --ignore-case \
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks detect --no-git --source . --config "$repo_dir/.gitleaks.toml" \
+    --redact --exit-code 1 >/dev/null 2>&1; then
+    printf '%s\n' 'Refusing to sync because gitleaks found a secret.' >&2
+    gitleaks detect --no-git --source . --config "$repo_dir/.gitleaks.toml" --redact --exit-code 1 || true
+    exit 1
+  fi
+elif rg --hidden --files-with-matches --ignore-case \
   --glob '!.git/**' \
   --glob '!scripts/.local/bin/dotfiles-sync' \
   --glob '!*.png' \

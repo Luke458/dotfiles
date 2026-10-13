@@ -1,5 +1,28 @@
 [user]
 	name = Luke458
 	email = luke@lukegallo.xyz
+[init]
+	defaultBranch = main
 [pull]
 	rebase = false
+[fetch]
+	prune = true
+[push]
+	autoSetupRemote = true
+[rebase]
+	autoSquash = true
+	autostash = true
+[diff]
+	algorithm = histogram
+[merge]
+	conflictStyle = zdiff3
+[rerere]
+	enabled = true
+[alias]
+	st = status -sb
+	co = checkout
+	br = branch
+	lg = log --oneline --graph --decorate
+	last = log -1 --stat
+	amend = commit --amend --no-edit
+	unstage = restore --staged

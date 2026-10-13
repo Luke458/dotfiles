@@ -56,28 +56,64 @@ map('n', '<A-q>', '<cmd>tabclose<CR>', { silent = true, desc = 'Close tab' })
 -- [[ File Navigation ]]
 -- ============================================================
 map('n', '-', '<cmd>Oil<CR>', { desc = 'Open parent directory (oil)' })
-map('n', '<leader>o', function() require('oil').toggle_float() end, { desc = 'Toggle oil float' })
-map('n', '<leader>fe', function() Snacks.explorer.open() end, { desc = '[F]iles [E]xplorer' })
-map('n', '<leader>ff', function() Snacks.picker.smart() end, { desc = 'Smart [F]ile picker' })
-map('n', '<leader>sf', function() Snacks.picker.files() end, { desc = '[S]earch [F]iles' })
-map('n', '<leader>fp', function() Snacks.picker.projects() end, { desc = 'Browse [P]rojects' })
+map('n', '<leader>o', function()
+  require('oil').toggle_float()
+end, { desc = 'Toggle oil float' })
+map('n', '<leader>fe', function()
+  Snacks.explorer.open()
+end, { desc = '[F]iles [E]xplorer' })
+map('n', '<leader>ff', function()
+  Snacks.picker.smart()
+end, { desc = 'Smart [F]ile picker' })
+map('n', '<leader>sf', function()
+  Snacks.picker.files()
+end, { desc = '[S]earch [F]iles' })
+map('n', '<leader>fp', function()
+  Snacks.picker.projects()
+end, { desc = 'Browse [P]rojects' })
 
 -- ============================================================
 -- [[ Search (Snacks Picker) ]]
 -- ============================================================
-map('n', '<leader>sh', function() Snacks.picker.help() end, { desc = '[S]earch [H]elp' })
-map('n', '<leader>sk', function() Snacks.picker.keymaps() end, { desc = '[S]earch [K]eymaps' })
-map('n', '<leader>sc', function() Snacks.picker.commands() end, { desc = '[S]earch [C]ommands' })
-map('n', '<leader>sb', function() Snacks.picker.builtin() end, { desc = '[S]earch [B]uiltins' })
-map('n', '<leader>ss', function() Snacks.picker.pickers() end, { desc = '[S]elect Snacks picker' })
-map({ 'n', 'x' }, '<leader>sw', function() Snacks.picker.grep_word() end, { desc = '[S]earch current [W]ord' })
-map('n', '<leader>fg', function() Snacks.picker.grep() end, { desc = '[S]earch by [G]rep' })
-map('n', '<leader>sd', function() Snacks.picker.diagnostics() end, { desc = '[S]earch [D]iagnostics' })
-map('n', '<leader>sr', function() Snacks.picker.resume() end, { desc = '[S]earch [R]esume' })
-map('n', '<leader>s.', function() Snacks.picker.recent() end, { desc = '[S]earch Recent Files' })
-map('n', '<leader><leader>', function() Snacks.picker.buffers() end, { desc = 'Switch Buffers' })
-map('n', '<leader>s/', function() Snacks.picker.lines {} end, { desc = 'Fuzzy search in buffer' })
-map('n', '<leader>sn', function() Snacks.picker.files { cwd = vim.fn.stdpath 'config' } end, { desc = '[S]earch [N]eovim files' })
+map('n', '<leader>sh', function()
+  Snacks.picker.help()
+end, { desc = '[S]earch [H]elp' })
+map('n', '<leader>sk', function()
+  Snacks.picker.keymaps()
+end, { desc = '[S]earch [K]eymaps' })
+map('n', '<leader>sc', function()
+  Snacks.picker.commands()
+end, { desc = '[S]earch [C]ommands' })
+map('n', '<leader>sb', function()
+  Snacks.picker.builtin()
+end, { desc = '[S]earch [B]uiltins' })
+map('n', '<leader>ss', function()
+  Snacks.picker.pickers()
+end, { desc = '[S]elect Snacks picker' })
+map({ 'n', 'x' }, '<leader>sw', function()
+  Snacks.picker.grep_word()
+end, { desc = '[S]earch current [W]ord' })
+map('n', '<leader>fg', function()
+  Snacks.picker.grep()
+end, { desc = '[S]earch by [G]rep' })
+map('n', '<leader>sd', function()
+  Snacks.picker.diagnostics()
+end, { desc = '[S]earch [D]iagnostics' })
+map('n', '<leader>sr', function()
+  Snacks.picker.resume()
+end, { desc = '[S]earch [R]esume' })
+map('n', '<leader>s.', function()
+  Snacks.picker.recent()
+end, { desc = '[S]earch Recent Files' })
+map('n', '<leader><leader>', function()
+  Snacks.picker.buffers()
+end, { desc = 'Switch Buffers' })
+map('n', '<leader>s/', function()
+  Snacks.picker.lines {}
+end, { desc = 'Fuzzy search in buffer' })
+map('n', '<leader>sn', function()
+  Snacks.picker.files { cwd = vim.fn.stdpath 'config' }
+end, { desc = '[S]earch [N]eovim files' })
 
 -- ============================================================
 -- [[ LSP & Diagnostics ]]
@@ -87,7 +123,9 @@ map('n', '<leader>xx', '<cmd>Trouble diagnostics toggle<CR>', { desc = 'Diagnost
 map('n', '<leader>xX', '<cmd>Trouble diagnostics toggle filter.buf=0<CR>', { desc = 'Buffer Diagnostics' })
 map('n', '<leader>cs', '<cmd>Trouble symbols toggle<CR>', { desc = 'Symbols (Trouble)' })
 map('n', '<leader>v', '<cmd>AerialToggle!<CR>', { desc = 'Toggle outline [V]iew' })
-map('n', '<leader>=', function() require('conform').format { async = true, lsp_format = 'fallback' } end, { desc = '[=] Format buffer' })
+map('n', '<leader>=', function()
+  require('conform').format { async = true, lsp_format = 'fallback' }
+end, { desc = '[=] Format buffer' })
 
 -- ============================================================
 -- [[ Terminal ]]
@@ -101,7 +139,9 @@ map('n', '<C-`>', function()
   end
   vim.cmd('ToggleTerm dir=' .. vim.fn.fnameescape(dir))
 end, { desc = 'Toggle terminal' })
-map('n', '<C-\\>', function() Snacks.zen() end, { desc = 'Toggle Zen mode' })
+map('n', '<C-\\>', function()
+  Snacks.zen()
+end, { desc = 'Toggle Zen mode' })
 
 -- ============================================================
 -- [[ Editing ]]
@@ -135,8 +175,8 @@ end, { desc = '[Y]ank fenced code block' })
 -- ============================================================
 -- [[ Comments ]]
 -- ============================================================
--- We try to map <leader>/ to comments. 
--- Since this file is loaded after plugins in init.lua, 
+-- We try to map <leader>/ to comments.
+-- Since this file is loaded after plugins in init.lua,
 -- we can check if Comment.nvim or builtin is active.
 map('n', '<leader>/', 'gcc', { remap = true, desc = 'Toggle comment' })
 map('x', '<leader>/', 'gc', { remap = true, desc = 'Toggle comment' })
@@ -144,7 +184,9 @@ map('x', '<leader>/', 'gc', { remap = true, desc = 'Toggle comment' })
 -- ============================================================
 -- [[ AI (Copilot) ]]
 -- ============================================================
-map({ 'n', 'v' }, '<leader>cc', function() require('CopilotChat').toggle() end, { desc = '[C]opilot [C]hat toggle' })
+map({ 'n', 'v' }, '<leader>cc', function()
+  require('CopilotChat').toggle()
+end, { desc = '[C]opilot [C]hat toggle' })
 map({ 'n', 'v' }, '<leader>cq', function()
   local input = vim.fn.input 'Quick Chat: '
   if input ~= '' then

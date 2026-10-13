@@ -15,12 +15,12 @@ vim.api.nvim_create_autocmd('PackChanged', {
   end,
 })
 
-vim.pack.add({
+vim.pack.add {
   -- Completion engine
-  { src = 'https://github.com/saghen/blink.cmp', version = vim.version.range('1.x') },
+  { src = 'https://github.com/saghen/blink.cmp', version = vim.version.range '1.x' },
   'https://github.com/giuxtaposition/blink-cmp-copilot',
   -- Snippets
-  { src = 'https://github.com/L3MON4D3/LuaSnip', version = vim.version.range('2.x') },
+  { src = 'https://github.com/L3MON4D3/LuaSnip', version = vim.version.range '2.x' },
   'https://github.com/rafamadriz/friendly-snippets',
   -- Neovim Lua API completions
   'https://github.com/folke/lazydev.nvim',
@@ -29,7 +29,7 @@ vim.pack.add({
   -- Copilot Chat
   { src = 'https://github.com/nvim-lua/plenary.nvim', checkout = 'master' },
   'https://github.com/CopilotC-Nvim/CopilotChat.nvim',
-})
+}
 
 -- lazydev: Neovim Lua API types & completions for Lua config files
 local ok_ld, ld = pcall(require, 'lazydev')
@@ -108,11 +108,15 @@ vim.api.nvim_create_autocmd('User', {
   callback = function()
     vim.api.nvim_create_autocmd('User', {
       pattern = 'BlinkCmpMenuOpen',
-      callback = function() vim.b.copilot_suggestion_hidden = true end,
+      callback = function()
+        vim.b.copilot_suggestion_hidden = true
+      end,
     })
     vim.api.nvim_create_autocmd('User', {
       pattern = 'BlinkCmpMenuClose',
-      callback = function() vim.b.copilot_suggestion_hidden = false end,
+      callback = function()
+        vim.b.copilot_suggestion_hidden = false
+      end,
     })
   end,
 })

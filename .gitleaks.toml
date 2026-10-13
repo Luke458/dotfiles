@@ -1,0 +1,20 @@
+# gitleaks configuration for this repository.
+#
+# Uses the upstream default rule set, then allowlists known non-secrets so the
+# scan stays useful without constant false positives.
+
+title = "Luke's dotfiles"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known non-secret content"
+paths = [
+  # Contains the credential-scan regexes themselves.
+  '''scripts/\.local/bin/dotfiles-sync$''',
+  # "pendingPassword = password" is application state, not a credential.
+  '''quickshell/\.config/quickshell/services/Lock\.qml$''',
+  # This file documents the patterns it allowlists.
+  '''\.gitleaks\.toml$''',
+]

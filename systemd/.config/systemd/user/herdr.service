@@ -8,6 +8,8 @@ WorkingDirectory=%h
 Environment="PATH=%h/.local/share/mise/shims:%h/.local/bin:%h/.local/share/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/opt/rocm/bin"
 Restart=on-failure
 RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
 
 [Install]
 WantedBy=default.target

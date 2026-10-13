@@ -6,14 +6,20 @@
 .DS_Store
 
 # Credentials and private material must never enter this repository.
+# Filename guards are intentionally narrow; content is checked by gitleaks
+# (.gitleaks.toml) and the scan in scripts/.local/bin/dotfiles-sync.
 **/.env
 **/.env.*
-**/*credentials*
-**/*private-key*
-**/*private_key*
-**/*secret*
-**/*token*
-**/id_*
+**/.netrc
+**/.git-credentials
+**/id_rsa
+**/id_ed25519
+**/id_ecdsa
+**/*.pem
+**/*.key
+**/*.kdbx
+**/credentials.json
+**/service-account*.json
 **/hosts.yml
 
 # Generated caches and build products

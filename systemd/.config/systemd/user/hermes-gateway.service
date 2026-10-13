@@ -14,6 +14,7 @@ Environment="HERMES_HOME=%h/.hermes"
 Environment="HERMES_SUPERVISED_CHILD=1"
 Restart=always
 RestartSec=5
+NoNewPrivileges=yes
 RestartForceExitStatus=75
 SuccessExitStatus=75
 RestartPreventExitStatus=78

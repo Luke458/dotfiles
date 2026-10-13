@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+#
+# Run every repository check that does not need a graphical session.
+# Used locally and by CI (.github/workflows/ci.yml).
+
+set -uo pipefail
+
+repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_dir" || exit 1
+
+failures=0
+run() {
+  printf '\n==> %s\n' "$*"
+  if ! "$@"; then
+    failures=$((failures + 1))
+  fi
+}
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# --- whitespace and conflict markers --------------------------------------
+run git diff --check
+if git grep -nE '^(<<<<<<< |=======$|>>>>>>> )' -- . >/dev/null 2>&1; then
+  printf '\n==> conflict markers\n'
+  git grep -nE '^(<<<<<<< |=======$|>>>>>>> )' -- .
+  failures=$((failures + 1))
+fi
+
+# --- shell scripts (detected by shebang) ----------------------------------
+mapfile -t shell_files < <(
+  git ls-files | while IFS= read -r file; do
+    head -c 120 "$file" 2>/dev/null | head -n1 | grep -qE '^#!.*(bash|/sh|zsh)' && printf '%s\n' "$file"
+  done
+)
+
+if ((${#shell_files[@]} > 0)); then
+  if have shellcheck; then
+    run shellcheck "${shell_files[@]}"
+  else
+    printf '\n==> shellcheck (not installed; skipped)\n'
+  fi
+
+  for file in "${shell_files[@]}"; do
+    case "$(head -n1 "$file")" in
+      *bash*) run bash -n "$file" ;;
+      *zsh*) run zsh -n "$file" ;;
+      *sh*) run sh -n "$file" ;;
+    esac
+  done
+fi
+
+# --- Lua ------------------------------------------------------------------
+mapfile -t lua_files < <(git ls-files '*.lua')
+
+luac_bin=""
+for candidate in luac luac5.4 luac5.3; do
+  if have "$candidate"; then
+    luac_bin="$candidate"
+    break
+  fi
+done
+
+if ((${#lua_files[@]} > 0)); then
+  if [ -n "$luac_bin" ]; then
+    run "$luac_bin" -p "${lua_files[@]}"
+  else
+    printf '\n==> lua syntax (no luac; skipped)\n'
+  fi
+
+  if have stylua; then
+    # Only format our own Lua: mpv ships third-party scripts with their own style.
+    mapfile -t style_files < <(git ls-files 'hypr/**/*.lua' 'nvim/**/*.lua')
+    run stylua --check "${style_files[@]}"
+  else
+    printf '\n==> stylua (not installed; skipped)\n'
+  fi
+fi
+
+# --- Stow -----------------------------------------------------------------
+if have stow; then
+  tmp_target="$(mktemp -d)"
+  printf '\n==> install.sh check\n'
+  if STOW_TARGET="$tmp_target" "$repo_dir/install.sh" check >"$tmp_target/stow.log" 2>&1; then
+    printf 'ok\n'
+  else
+    cat "$tmp_target/stow.log"
+    failures=$((failures + 1))
+  fi
+  rm -rf -- "$tmp_target"
+else
+  printf '\n==> stow (not installed; skipped install.sh check)\n'
+fi
+
+# --- Secrets --------------------------------------------------------------
+if have gitleaks; then
+  run gitleaks detect --no-git --source . --config .gitleaks.toml --redact --exit-code 1
+else
+  printf '\n==> gitleaks (not installed; skipped)\n'
+fi
+
+printf '\n%s\n' '----------------------------------------'
+if ((failures > 0)); then
+  printf 'check failed: %d step(s)\n' "$failures"
+  exit 1
+fi
+printf 'all checks passed\n'

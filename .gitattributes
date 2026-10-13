@@ -1,0 +1,17 @@
+# Normalize line endings; keep generated/pinned files out of language stats.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+
+packages/arch-repo.txt linguist-generated=true
+packages/arch-aur.txt linguist-generated=true
+nvim/.config/nvim/nvim-pack-lock.json linguist-generated=true
+quickshell/.config/quickshell/assets/emojis.json linguist-generated=true

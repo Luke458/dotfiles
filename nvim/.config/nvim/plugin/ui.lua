@@ -1,7 +1,7 @@
 -- UI: which-key, mini.nvim, alpha dashboard, bufferline, trouble, aerial,
 -- oil file manager, toggleterm.
 
-vim.pack.add({
+vim.pack.add {
   -- Keybind hint popup
   'https://github.com/folke/which-key.nvim',
   -- mini.nvim (icons + statusline)
@@ -9,7 +9,7 @@ vim.pack.add({
   -- Dashboard / start screen
   'https://github.com/goolord/alpha-nvim',
   -- VSCode-style buffer tab bar
-  { src = 'https://github.com/akinsho/bufferline.nvim', version = vim.version.range('*') },
+  { src = 'https://github.com/akinsho/bufferline.nvim', version = vim.version.range '*' },
   -- Problems panel (like VSCode Ctrl+Shift+M)
   'https://github.com/folke/trouble.nvim',
   -- Symbol outline sidebar
@@ -17,8 +17,8 @@ vim.pack.add({
   -- File manager as a buffer (edit filesystem like text)
   'https://github.com/stevearc/oil.nvim',
   -- Integrated terminal toggled with Ctrl+`
-  { src = 'https://github.com/akinsho/toggleterm.nvim', version = vim.version.range('*') },
-})
+  { src = 'https://github.com/akinsho/toggleterm.nvim', version = vim.version.range '*' },
+}
 
 -- which-key
 local ok_wk, wk = pcall(require, 'which-key')
@@ -28,14 +28,34 @@ if ok_wk then
     icons = {
       mappings = vim.g.have_nerd_font,
       keys = vim.g.have_nerd_font and {} or {
-        Up = '<Up> ', Down = '<Down> ', Left = '<Left> ', Right = '<Right> ',
-        C = '<C-…> ', M = '<M-…> ', D = '<D-…> ', S = '<S-…> ',
-        CR = '<CR> ', Esc = '<Esc> ', ScrollWheelDown = '<ScrollWheelDown> ',
-        ScrollWheelUp = '<ScrollWheelUp> ', NL = '<NL> ', BS = '<BS> ',
-        Space = '<Space> ', Tab = '<Tab> ',
-        F1 = '<F1>', F2 = '<F2>', F3 = '<F3>', F4 = '<F4>', F5 = '<F5>',
-        F6 = '<F6>', F7 = '<F7>', F8 = '<F8>', F9 = '<F9>', F10 = '<F10>',
-        F11 = '<F11>', F12 = '<F12>',
+        Up = '<Up> ',
+        Down = '<Down> ',
+        Left = '<Left> ',
+        Right = '<Right> ',
+        C = '<C-…> ',
+        M = '<M-…> ',
+        D = '<D-…> ',
+        S = '<S-…> ',
+        CR = '<CR> ',
+        Esc = '<Esc> ',
+        ScrollWheelDown = '<ScrollWheelDown> ',
+        ScrollWheelUp = '<ScrollWheelUp> ',
+        NL = '<NL> ',
+        BS = '<BS> ',
+        Space = '<Space> ',
+        Tab = '<Tab> ',
+        F1 = '<F1>',
+        F2 = '<F2>',
+        F3 = '<F3>',
+        F4 = '<F4>',
+        F5 = '<F5>',
+        F6 = '<F6>',
+        F7 = '<F7>',
+        F8 = '<F8>',
+        F9 = '<F9>',
+        F10 = '<F10>',
+        F11 = '<F11>',
+        F12 = '<F12>',
       },
     },
     spec = {
@@ -47,13 +67,19 @@ end
 
 -- mini.nvim (only icons + statusline)
 local ok_mi, mi = pcall(require, 'mini.icons')
-if ok_mi then mi.setup() end
+if ok_mi then
+  mi.setup()
+end
 
 local ok_ma, ma = pcall(require, 'mini.ai')
-if ok_ma then ma.setup { n_lines = 500 } end
+if ok_ma then
+  ma.setup { n_lines = 500 }
+end
 
 local ok_ms, ms = pcall(require, 'mini.surround')
-if ok_ms then ms.setup() end
+if ok_ms then
+  ms.setup()
+end
 
 local ok_sl, sl = pcall(require, 'mini.statusline')
 if ok_sl then
@@ -95,11 +121,15 @@ end
 
 -- trouble
 local ok_tr, tr = pcall(require, 'trouble')
-if ok_tr then tr.setup {} end
+if ok_tr then
+  tr.setup {}
+end
 
 -- aerial
 local ok_ae, ae = pcall(require, 'aerial')
-if ok_ae then ae.setup {} end
+if ok_ae then
+  ae.setup {}
+end
 
 -- oil
 local ok_oil, oil = pcall(require, 'oil')

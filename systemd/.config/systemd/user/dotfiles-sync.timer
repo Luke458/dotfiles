@@ -1,9 +1,9 @@
 [Unit]
-Description=Synchronize tracked dotfiles hourly
+Description=Synchronize tracked dotfiles every six hours
 
 [Timer]
 OnBootSec=10min
-OnCalendar=hourly
+OnCalendar=*-*-* 00/6:00:00
 Persistent=true
 RandomizedDelaySec=5min
 AccuracySec=1min

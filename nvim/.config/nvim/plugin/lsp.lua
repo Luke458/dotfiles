@@ -1,13 +1,13 @@
 -- LSP: server configuration, Mason installer, formatter (conform), linting.
 
-vim.pack.add({
+vim.pack.add {
   'https://github.com/neovim/nvim-lspconfig',
   { src = 'https://github.com/mason-org/mason.nvim', checkout = 'main' },
   'https://github.com/WhoIsSethDaniel/mason-tool-installer.nvim',
   { src = 'https://github.com/j-hui/fidget.nvim', checkout = 'main' },
   -- Autoformat on save
   'https://github.com/stevearc/conform.nvim',
-})
+}
 
 -- Mason
 local ok_mason, mason = pcall(require, 'mason')
@@ -88,13 +88,25 @@ vim.api.nvim_create_autocmd('LspAttach', {
 
     map('grn', vim.lsp.buf.rename, '[R]e[n]ame')
     map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
-    map('grr', function() require('snacks').picker.lsp_references() end, '[G]oto [R]eferences')
-    map('gri', function() require('snacks').picker.lsp_implementations() end, '[G]oto [I]mplementation')
-    map('grd', function() require('snacks').picker.lsp_definitions() end, '[G]oto [D]efinition')
+    map('grr', function()
+      require('snacks').picker.lsp_references()
+    end, '[G]oto [R]eferences')
+    map('gri', function()
+      require('snacks').picker.lsp_implementations()
+    end, '[G]oto [I]mplementation')
+    map('grd', function()
+      require('snacks').picker.lsp_definitions()
+    end, '[G]oto [D]efinition')
     map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
-    map('gO', function() require('snacks').picker.lsp_symbols() end, 'Open Document Symbols')
-    map('gW', function() require('snacks').picker.lsp_workspace_symbols() end, 'Open Workspace Symbols')
-    map('grt', function() require('snacks').picker.lsp_type_definitions() end, '[G]oto [T]ype Definition')
+    map('gO', function()
+      require('snacks').picker.lsp_symbols()
+    end, 'Open Document Symbols')
+    map('gW', function()
+      require('snacks').picker.lsp_workspace_symbols()
+    end, 'Open Workspace Symbols')
+    map('grt', function()
+      require('snacks').picker.lsp_type_definitions()
+    end, '[G]oto [T]ype Definition')
 
     ---@param client vim.lsp.Client
     ---@param method vim.lsp.protocol.Method
@@ -143,6 +155,8 @@ vim.diagnostic.config {
   virtual_text = {
     source = 'if_many',
     spacing = 2,
-    format = function(d) return d.message end,
+    format = function(d)
+      return d.message
+    end,
   },
 }

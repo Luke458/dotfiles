@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-exec /home/luke/.local/share/bin/thumbnails/thumbnails.py "$@"
+exec "${XDG_DATA_HOME:-$HOME/.local/share}/bin/thumbnails/thumbnails.py" "$@"

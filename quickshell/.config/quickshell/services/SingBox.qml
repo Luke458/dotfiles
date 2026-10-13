@@ -8,7 +8,7 @@ import Quickshell.Io
 QtObject {
     id: root
 
-    readonly property string commandPath: Quickshell.env("SBR_PATH") || "/home/luke/Projects/sing-box-routes/bin/sbr"
+    readonly property string commandPath: Quickshell.env("SBR_PATH") || (Quickshell.env("HOME") + "/Projects/sing-box-routes/bin/sbr")
 
     property var routes: []
     property int total: 0

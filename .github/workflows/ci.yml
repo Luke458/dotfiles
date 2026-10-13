@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck lua5.4 zsh stow
+
+      - name: Install stylua
+        run: |
+          version=2.5.2
+          curl -sSL "https://github.com/JohnnyMorganz/StyLua/releases/download/v${version}/stylua-linux-x86_64.zip" -o /tmp/stylua.zip
+          unzip -q /tmp/stylua.zip -d /tmp/stylua
+          sudo install /tmp/stylua/stylua /usr/local/bin/stylua
+
+      - name: Install gitleaks
+        run: |
+          version=8.30.1
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz" |
+            sudo tar -xz -C /usr/local/bin gitleaks
+
+      - name: Run checks
+        run: ./tools/check

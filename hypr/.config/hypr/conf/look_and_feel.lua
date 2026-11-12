@@ -18,6 +18,7 @@ hl.config({
 
 	render = {
 		direct_scanout = true,
+		cm_auto_hdr = 0, -- don't switch monitors to HDR when an app goes fullscreen
 	},
 
 	decoration = {

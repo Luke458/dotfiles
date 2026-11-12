@@ -15,11 +15,10 @@ outputDevice=alsa_output.usb-TOPPING_DX1_II-00.pro-output-0
 plugins=equalizer#5,stereo_tools#0
 showBlocklistedApps=true
 useDefaultOutputDevice=false
-usedPresets=Sennheiser PC36X:23,EPZ P40:46,AKG EO-IG955:7
+usedPresets=Sennheiser PC36X:32,EPZ P40:55,AKG EO-IG955:7
 visiblePage=pluginsPage
-visiblePlugin=stereo_tools#0
+visiblePlugin=equalizer#5
 
 [Window]
-height=1392
-visiblePage=inputPage
-width=1256
+height=1149
+width=1501

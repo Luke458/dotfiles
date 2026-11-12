@@ -41,6 +41,7 @@ QtObject {
     property string firmwareError: ""
     property bool awaitingFirmwareStart: false
     property int deviceGeneration: 0
+    property int dpiGeneration: -1
     property int firmwareGeneration: -1
 
     readonly property bool hasDpi: dpiStages.length > 0 && dpiActiveStage >= 1
@@ -82,6 +83,7 @@ QtObject {
         dpiStages = [];
         dpiActiveStage = -1;
         dpiMode = "";
+        dpiError = "";
         lastDpiReport = "";
     }
 
@@ -90,7 +92,8 @@ QtObject {
             return;
         awaitingDpiStart = false;
         dpiLoading = false;
-        dpiError = "Could not start " + dpiProc.command[0];
+        if (dpiGeneration === deviceGeneration)
+            dpiError = "Could not start " + dpiProc.command[0];
     }
 
     function runDpi(args) {
@@ -98,6 +101,7 @@ QtObject {
             return;
         dpiLoading = true;
         awaitingDpiStart = true;
+        dpiGeneration = deviceGeneration;
         dpiProc.exec([Quickshell.shellPath("scripts/attack-shark-dpi"), "--json"].concat(args));
         Qt.callLater(checkDpiStartFailure);
     }
@@ -160,6 +164,28 @@ QtObject {
         }
     }
 
+    function finishFirmwareRead(output, errorOutput, exitCode, generation) {
+        if (generation !== deviceGeneration || !connected)
+            return;
+        if (exitCode !== 0) {
+            firmwareInfo = null;
+            firmwareError = errorOutput || "Firmware tool exited with code " + exitCode;
+            try {
+                const payload = JSON.parse(output);
+                if (typeof payload.error === "string" && payload.error)
+                    firmwareError = payload.error;
+            } catch (error) {
+            }
+            return;
+        }
+        if (output)
+            applyFirmwarePayload(output);
+        else {
+            firmwareInfo = null;
+            firmwareError = "Empty firmware response";
+        }
+    }
+
     // Passive stage-change notification from the metrics stream (DPI button
     // presses included), so the flyout stays current without re-querying.
     function applyDpiChange(stage, dpi) {
@@ -183,8 +209,13 @@ QtObject {
             const stages = Array.isArray(payload.stages) ? payload.stages.map(Number) : [];
             const active = Number(payload.active_stage);
             if (stages.length !== 8 || !stages.every(value => Number.isInteger(value) && value >= 50 && value <= 30000 && value % 50 === 0)
-                    || !Number.isInteger(active) || !(active >= 1 && active <= stages.length))
+                    || !Number.isInteger(active) || !(active >= 1 && active <= stages.length)
+                    || typeof payload.device !== "string" || !["wired", "wireless"].includes(payload.mode))
                 throw new Error("bad payload");
+            if (!connected || payload.device !== device || payload.mode !== mode) {
+                dpiError = "Mouse connection changed; read DPI again";
+                return;
+            }
             dpiStages = stages;
             dpiActiveStage = active;
             dpiMode = payload.mode || "";
@@ -192,6 +223,25 @@ QtObject {
         } catch (error) {
             dpiError = "Invalid DPI response";
         }
+    }
+
+    function finishDpiRead(output, errorOutput, exitCode, generation) {
+        if (generation !== deviceGeneration || !connected)
+            return;
+        if (exitCode !== 0) {
+            dpiError = errorOutput || "DPI tool exited with code " + exitCode;
+            try {
+                const payload = JSON.parse(output);
+                if (typeof payload.error === "string" && payload.error)
+                    dpiError = payload.error;
+            } catch (error) {
+            }
+            return;
+        }
+        if (output)
+            applyDpiPayload(output);
+        else
+            dpiError = "Empty DPI response";
     }
 
     function applyLine(data) {
@@ -340,11 +390,7 @@ QtObject {
         onExited: exitCode => { // qmllint disable signal-handler-parameters
             root.awaitingDpiStart = false;
             root.dpiLoading = false;
-            const output = dpiStdout.text.trim();
-            if (output)
-                root.applyDpiPayload(output);
-            else
-                root.dpiError = dpiStderr.text.trim() || "DPI tool exited with code " + exitCode;
+            root.finishDpiRead(dpiStdout.text.trim(), dpiStderr.text.trim(), exitCode, root.dpiGeneration);
             if (!root.connected)
                 root.clearDpi();
             const refresh = root.dpiRefreshQueued && root.detailsConsumers > 0 && root.connected;
@@ -374,15 +420,7 @@ QtObject {
         onExited: exitCode => {
             root.awaitingFirmwareStart = false;
             root.firmwareLoading = false;
-            if (root.firmwareGeneration !== root.deviceGeneration || !root.connected)
-                return;
-            const output = firmwareStdout.text.trim();
-            if (exitCode !== 0)
-                root.firmwareError = firmwareStderr.text.trim() || "Firmware tool exited with code " + exitCode;
-            if (output)
-                root.applyFirmwarePayload(output);
-            else if (exitCode === 0)
-                root.firmwareError = "Empty firmware response";
+            root.finishFirmwareRead(firmwareStdout.text.trim(), firmwareStderr.text.trim(), exitCode, root.firmwareGeneration);
         }
     }
 

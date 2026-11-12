@@ -110,6 +110,11 @@ fi
 # Activate mise-managed tools in interactive shells
 eval "$(mise activate zsh)"
 
+# T3 Code CLI installed by the desktop app; must win over any mise shim
+if [ -d "$HOME/.t3/bin" ]; then
+    export PATH="$HOME/.t3/bin:$PATH"
+fi
+
 # --- Other program settings ---
 [ -x "$(command -v nvim)" ] && alias vim="nvim" vimdiff="nvim -d" # Use neovim for vim if present.
 eval "$(zoxide init zsh)"
@@ -144,6 +149,7 @@ alias yt="yt-dlp --embed-metadata -i"
 alias yta="yt -x -f bestaudio/best"
 alias ytt="yt --skip-download --write-thumbnail"
 alias ffmpeg="ffmpeg -hide_banner"
+alias adb='HOME="$XDG_DATA_HOME"/android adb'
 
 # --- Keybindings ---
 # Bind history substring search to Up/Down

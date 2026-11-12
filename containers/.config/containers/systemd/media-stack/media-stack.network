@@ -1,5 +1,0 @@
-[Network]
-NetworkName=media-stack_default
-
-[Quadlet]
-DefaultDependencies=false

@@ -14,9 +14,7 @@ AddDevice=/dev/dri:/dev/dri:rwm
 GroupAdd=keep-groups
 Volume=/home/luke/media-stack/config/jellyfin:/config
 Volume=/home/luke/data/media:/data/media
-PublishPort=8096:8096
-Network=media-stack.network
-NetworkAlias=jellyfin
+Network=host
 
 [Service]
 Restart=always

@@ -1,0 +1,45 @@
+[Unit]
+Description=yarr media fleet MCP server
+PartOf=media-stack.target
+
+[Container]
+Image=ghcr.io/dinglebear-ai/yarr:2.2.0
+ContainerName=yarr
+AutoUpdate=registry
+# Secrets, upstream URLs and MCP auth. Parsed by podman --env-file.
+EnvironmentFile=/home/luke/.yarr/.env
+# yarr never detects Podman as a container (it only checks /.dockerenv), so it
+# falls back to $HOME/.yarr — /home/nonroot is 0700 in the distroless base and
+# the read failure is fatal. YARR_HOME lives in .env; HOME belongs here because
+# the .env overlay loader rejects non-YARR_ keys.
+Environment=HOME=/data
+# Image runs as numeric 1000:1000; keep-id makes the bind mount writable.
+UserNS=keep-id
+Volume=/home/luke/.yarr:/data
+# Host networking: the whole stack shares the host netns, so peers/trackers get
+# UDP (DHT/uTP/UDP trackers) that rootless bridged networking drops, and every
+# cross-service URL is 127.0.0.1.
+Network=host
+ReadOnly=true
+NoNewPrivileges=true
+StopTimeout=30
+Ulimit=nofile=65535:65535
+# The published image carries no HEALTHCHECK (the Dockerfile one does not
+# survive the release build), so declare upstream's probe here. A plain-string
+# Quadlet value is wrapped in /bin/sh -c, and distroless has no shell, so this
+# uses podman's JSON-array (exec) form.
+HealthCmd=["/usr/local/bin/yarr", "watch", "--once", "--url", "http://127.0.0.1:40070/ready"]
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=10s
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=media-stack.target
+
+[Quadlet]
+DefaultDependencies=false

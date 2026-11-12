@@ -13,9 +13,7 @@ Environment=TZ=Etc/UTC
 Environment=WEBUI_PORT=8080
 Volume=/home/luke/media-stack/config/qbittorrent:/config
 Volume=/home/luke/data/torrents:/data/torrents
-PublishPort=127.0.0.1:8080:8080
-Network=media-stack.network
-NetworkAlias=qbittorrent
+Network=host
 
 [Service]
 Restart=always
